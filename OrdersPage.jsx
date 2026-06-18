@@ -85,17 +85,17 @@ export default function OrdersPage() {
       <section className="panel">
         <div className="panel-head"><h2>Quản lý Đơn hàng</h2></div>
         <div className="table-wrap">
-          <table>
+          <table className="responsive-cards">
             <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Thông tin liên hệ</th><th>Trạng thái</th><th>Ngày tạo</th><th>Hành động</th></tr></thead>
             <tbody>
               {orders.map(o => (
                 <tr key={o.id}>
-                  <td><strong>{o.order_no}</strong><br/><span style={{fontSize: '11px', color: 'var(--muted)'}}>{o.is_web_order ? '🌐 Đặt từ Web' : '🏢 Tạo nội bộ'}</span></td>
-                  <td>{o.customer_name === 'Khách Đặt Web' ? o.delivery_address.split('-')[0].replace(/[\[\]]/g, '').trim() : o.customer_name}</td>
-                  <td style={{ fontSize: '12px', color: 'var(--muted)', maxWidth: '200px' }}>{o.delivery_address}</td>
-                  <td>{getStatusPill(o.status)}</td>
-                  <td>{new Date(o.created_at).toLocaleString('vi-VN')}</td>
-                  <td>
+                  <td data-label="Mã đơn"><strong>{o.order_no}</strong><br/><span style={{fontSize: '11px', color: 'var(--muted)'}}>{o.is_web_order ? '🌐 Đặt từ Web' : '🏢 Tạo nội bộ'}</span></td>
+                  <td data-label="Khách hàng">{o.customer_name === 'Khách Đặt Web' ? o.delivery_address.split('-')[0].replace(/[\[\]]/g, '').trim() : o.customer_name}</td>
+                  <td data-label="Liên hệ" style={{ fontSize: '12px', color: 'var(--muted)', maxWidth: '200px' }}>{o.delivery_address}</td>
+                  <td data-label="Trạng thái">{getStatusPill(o.status)}</td>
+                  <td data-label="Ngày tạo">{new Date(o.created_at).toLocaleString('vi-VN')}</td>
+                  <td data-label="Hành động">
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button className="btn ghost" style={{ color: 'var(--blue)', borderColor: 'var(--blue)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => { setSelectedOrder(o); setTrackingCode(o.tracking_code || ''); setEstimatedDelivery(o.estimated_delivery ? o.estimated_delivery.split('T')[0] : ''); }}>Cập nhật</button>
                       {o.status !== 'CANCELLED' && o.status !== 'COMPLETED' && <button className="btn ghost" style={{ color: 'var(--copper)', borderColor: 'var(--copper)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => handleCancelOrder(o.id, o.order_no)}>Hủy</button>}

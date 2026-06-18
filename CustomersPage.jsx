@@ -48,13 +48,13 @@ export default function CustomersPage() {
           {!showForm && <button className="btn primary" onClick={() => setShowForm(true)}>+ Thêm khách hàng</button>}
         </div>
         <div className="table-wrap">
-          <table>
+          <table className="responsive-cards">
             <thead>
               <tr><th>Mã KH</th><th>Tên khách hàng</th><th>Điện thoại</th><th>Địa chỉ</th><th>Người liên hệ</th></tr>
             </thead>
             <tbody>
               {customers.map(c => (
-                <tr key={c.id}><td><strong>{c.code}</strong></td><td>{c.name}</td><td>{c.phone}</td><td>{c.address}</td><td>{c.contact_person}</td></tr>
+                <tr key={c.id}><td data-label="Mã KH"><strong>{c.code}</strong></td><td data-label="Tên khách hàng">{c.name}</td><td data-label="Điện thoại">{c.phone}</td><td data-label="Địa chỉ">{c.address}</td><td data-label="Người liên hệ">{c.contact_person}</td></tr>
               ))}
             </tbody>
           </table>

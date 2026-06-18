@@ -88,7 +88,7 @@ export default function ProductsPage() {
           {!showForm && <button className="btn primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Thêm sản phẩm</button>}
         </div>
         <div className="table-wrap" style={{ paddingBottom: menuOpenId ? '120px' : '0', transition: 'padding 0.2s ease' }}>
-          <table>
+          <table className="responsive-cards">
             <thead>
               <tr>
                 <th style={{ width: '56px' }}>Ảnh</th>
@@ -104,18 +104,18 @@ export default function ProductsPage() {
             <tbody>
               {products.map(p => (
                 <tr key={p.id}>
-                  <td>
+                  <td data-label="Ảnh">
                     <div style={{ width: '42px', height: '42px', borderRadius: '6px', background: '#f0f3ed', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {p.image ? <img src={p.image} alt="img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🛍️'}
                     </div>
                   </td>
-                  <td><strong>{p.code}</strong></td>
-                  <td>{p.name}</td>
-                  <td>{p.category}</td>
-                  <td>{p.unit}</td>
-                  <td>{Number(p.reference_price).toLocaleString('vi-VN')} đ</td>
-                  <td>{p.active ? <span className="pill green">Đang bán</span> : <span className="pill gold">Ngừng bán</span>}</td>
-                  <td style={{ position: 'relative' }}>
+                  <td data-label="Mã SP"><strong>{p.code}</strong></td>
+                  <td data-label="Tên sản phẩm">{p.name}</td>
+                  <td data-label="Danh mục">{p.category}</td>
+                  <td data-label="Đơn vị">{p.unit}</td>
+                  <td data-label="Giá tham khảo">{Number(p.reference_price).toLocaleString('vi-VN')} đ</td>
+                  <td data-label="Trạng thái">{p.active ? <span className="pill green">Đang bán</span> : <span className="pill gold">Ngừng bán</span>}</td>
+                  <td data-label="" style={{ position: 'relative' }}>
                     <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', color: 'var(--ink)', borderColor: 'transparent' }} onClick={() => setMenuOpenId(menuOpenId === p.id ? null : p.id)}>⋮</button>
                     {menuOpenId === p.id && (
                       <div style={{ position: 'absolute', right: '10px', top: '35px', background: '#fff', border: '1px solid var(--line)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, display: 'flex', flexDirection: 'column', minWidth: '160px' }}>
