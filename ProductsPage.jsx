@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import api from './api';
 
 export default function ProductsPage() {
@@ -7,6 +8,8 @@ export default function ProductsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [toast, setToast] = useState('');
   const fileInputRef = useRef(null);
 
   const [code, setCode] = useState('');
@@ -17,19 +20,32 @@ export default function ProductsPage() {
   const [image, setImage] = useState('');
   const [description, setDescription] = useState('');
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get('/products');
+      setProducts(res.data.data);
+    } catch (error) {
+      console.error('Lỗi khi tải sản phẩm:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await api.get('/products');
-        setProducts(res.data.data);
-      } catch (error) {
-        console.error('Lỗi khi tải sản phẩm:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProducts();
   }, []);
+
+  const addToCart = (e, p) => {
+    if (e) e.stopPropagation();
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const item = cart.find(i => i.id === p.id);
+    if (item) item.quantity += 1;
+    else cart.push({ id: p.id, name: p.name, price: p.reference_price, image: p.image, quantity: 1 });
+    localStorage.setItem('cart', JSON.stringify(cart));
+    setToast(`Đã thêm "${p.name}" vào giỏ!`);
+    setTimeout(() => setToast(''), 2500);
+    setSelectedProduct(null);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -64,7 +80,7 @@ export default function ProductsPage() {
   const openEdit = (p) => {
     setEditingId(p.id); setCode(p.code); setName(p.name); setCategory(p.category || ''); 
     setUnit(p.unit); setPrice(p.reference_price); setImage(p.image || ''); setDescription(p.description || '');
-    setShowForm(true); setMenuOpenId(null);
+    setShowForm(true); setMenuOpenId(null); setSelectedProduct(null);
   };
 
   const handleDeleteProduct = async (id, name) => {
@@ -87,8 +103,8 @@ export default function ProductsPage() {
           <h2>Danh mục Sản phẩm</h2>
           {!showForm && <button className="btn primary" onClick={() => { resetForm(); setShowForm(true); }}>+ Thêm sản phẩm</button>}
         </div>
-        <div className="table-wrap" style={{ paddingBottom: menuOpenId ? '120px' : '0', transition: 'padding 0.2s ease' }}>
-          <table className="responsive-cards">
+        <div className="table-wrap product-table-desktop" style={{ paddingBottom: menuOpenId ? '120px' : '0', transition: 'padding 0.2s ease' }}>
+          <table>
             <thead>
               <tr>
                 <th style={{ width: '56px' }}>Ảnh</th>
@@ -129,6 +145,24 @@ export default function ProductsPage() {
             </tbody>
           </table>
         </div>
+
+        <div className="product-shop-mobile">
+          {products.map(p => (
+            <div key={p.id} className="shop-card" onClick={() => setSelectedProduct(p)}>
+              <div className="shop-card-img">
+                {p.image ? <img src={p.image} alt={p.name} /> : '🛍️'}
+              </div>
+              <div className="shop-card-body">
+                <div className="shop-card-cat">{p.category || 'Chưa phân loại'}</div>
+                <h3 className="shop-card-name">{p.name}</h3>
+                <div className="shop-card-foot">
+                  <span className="shop-card-price">{Number(p.reference_price).toLocaleString('vi-VN')} đ</span>
+                  <button type="button" className="shop-card-buy" onClick={(e) => addToCart(e, p)}>Đặt hàng</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {showForm && (
@@ -161,6 +195,34 @@ export default function ProductsPage() {
           </form>
         </section>
       )}
+
+      {selectedProduct && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }} onClick={() => setSelectedProduct(null)}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '400px', padding: '0', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+            <div style={{ height: '280px', background: '#f0f3ed', display: 'grid', placeItems: 'center', fontSize: '80px' }}>
+              {selectedProduct.image ? <img src={selectedProduct.image} alt="img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🛍️'}
+            </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', gap: '12px' }}>
+                <div>
+                  <div style={{ color: 'var(--copper)', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>{selectedProduct.category || 'Chưa phân loại'}</div>
+                  <h2 style={{ margin: 0 }}>{selectedProduct.name}</h2>
+                </div>
+                <strong style={{ fontSize: '22px', color: 'var(--green-2)', whiteSpace: 'nowrap' }}>{Number(selectedProduct.reference_price).toLocaleString('vi-VN')}đ</strong>
+              </div>
+              <p style={{ color: 'var(--muted)', margin: '0 0 24px 0', minHeight: '60px' }}>{selectedProduct.description || 'Chưa có mô tả cho sản phẩm này.'}</p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button className="btn ghost" style={{ flex: 1, color: 'var(--ink)', borderColor: 'var(--line)' }} onClick={() => setSelectedProduct(null)}>Đóng</button>
+                <button className="btn" style={{ flex: 1, background: 'var(--green-2)', color: '#fff' }} onClick={(e) => addToCart(e, selectedProduct)}>Đặt hàng</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {toast && createPortal(
+        <div className="page-transition" style={{ position: 'fixed', bottom: '30px', right: '30px', background: 'var(--green-2)', color: '#fff', padding: '14px 24px', borderRadius: '8px', boxShadow: '0 10px 20px rgba(0,0,0,0.2)', zIndex: 10000, fontWeight: 'bold' }}>✓ {toast}</div>
+      , document.body)}
     </div>
   );
 }
