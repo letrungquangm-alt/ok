@@ -51,19 +51,23 @@ app.locals.statusLabels = {
 
 app.locals.formatDate = (value) => {
   if (!value) return '';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'short',
     timeStyle: 'short',
     timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(value));
+  }).format(date);
 };
 
 app.locals.formatMoney = (value) => {
+  const num = Number(value || 0);
+  const validNum = isNaN(num) ? 0 : num;
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
     currency: 'VND',
     maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  }).format(validNum);
 };
 
 app.use('/api', apiRoutes);
