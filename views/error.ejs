@@ -1,0 +1,13 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <section class="panel narrow">
+    <h1 class="page-title"><%= title || 'Có lỗi xảy ra' %></h1>
+    <p class="subtle"><%= error %></p>
+    <div class="actions">
+      <a class="button" href="/">Về tổng quan</a>
+      <a class="button secondary" href="javascript:history.back()">Quay lại</a>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

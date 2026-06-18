@@ -1,0 +1,81 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Quản lý sản phẩm</h1>
+      <p class="subtle">Mã sản phẩm, đơn vị tính, nhóm hàng và giá bán tham khảo.</p>
+    </div>
+    <a class="button secondary" href="/api/products" target="_blank">JSON</a>
+  </div>
+  <%- include('partials/flash') %>
+  <section class="grid grid-2">
+    <form class="panel" action="/products" method="post">
+      <h2 class="section-title"><%= product.id ? 'Sửa sản phẩm' : 'Thêm sản phẩm' %></h2>
+      <% if (product.id) { %><input type="hidden" name="id" value="<%= product.id %>"><% } %>
+      <div class="form-grid">
+        <div>
+          <label>Mã sản phẩm</label>
+          <input name="code" value="<%= product.code || '' %>" required>
+        </div>
+        <div>
+          <label>Tên sản phẩm</label>
+          <input name="name" value="<%= product.name || '' %>" required>
+        </div>
+        <div>
+          <label>Đơn vị tính</label>
+          <input name="unit" value="<%= product.unit || '' %>" required>
+        </div>
+        <div>
+          <label>Nhóm hàng</label>
+          <input name="category" value="<%= product.category || '' %>">
+        </div>
+        <div>
+          <label>Giá bán tham khảo</label>
+          <input name="reference_price" type="number" min="0" step="1000" value="<%= product.reference_price || 0 %>">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" name="active" <%= product.active === false ? '' : 'checked' %>>
+          Đang sử dụng
+        </label>
+      </div>
+      <div class="actions">
+        <button type="submit">Lưu sản phẩm</button>
+        <% if (product.id) { %><a class="button secondary" href="/products">Hủy sửa</a><% } %>
+      </div>
+    </form>
+
+    <div class="panel">
+      <h2 class="section-title">Danh sách sản phẩm</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Mã</th>
+            <th>Tên</th>
+            <th>ĐVT</th>
+            <th>Nhóm</th>
+            <th>Giá</th>
+            <th>Trạng thái</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <% products.forEach((item) => { %>
+            <tr>
+              <td><strong><%= item.code %></strong></td>
+              <td><%= item.name %></td>
+              <td><%= item.unit %></td>
+              <td><%= item.category || '' %></td>
+              <td><%= formatMoney(item.reference_price) %></td>
+              <td><span class="status <%= item.active ? 'status-completed' : 'status-cancelled' %>"><%= item.active ? 'Đang dùng' : 'Tạm ngưng' %></span></td>
+              <td><a href="/products/<%= item.id %>/edit">Sửa</a></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

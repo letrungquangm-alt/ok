@@ -1,0 +1,46 @@
+{
+  "login": {
+    "method": "POST",
+    "url": "/login",
+    "form": {
+      "username": "admin",
+      "password": "admin123"
+    }
+  },
+  "readEndpoints": [
+    "/api/health",
+    "/api/products",
+    "/api/customers",
+    "/api/warehouses",
+    "/api/inventory",
+    "/api/orders",
+    "/api/reports/inbound?from=2026-06-01&to=2026-06-18",
+    "/api/reports/outbound?from=2026-06-01&to=2026-06-18"
+  ],
+  "createReceipt": {
+    "method": "POST",
+    "url": "/api/receipts",
+    "body": {
+      "warehouseId": 1,
+      "sourceFactory": "Nhà máy chính",
+      "confirmNow": true,
+      "lines": [
+        { "productId": 1, "quantity": 100 },
+        { "productId": 2, "quantity": 50 }
+      ]
+    }
+  },
+  "createOrder": {
+    "method": "POST",
+    "url": "/api/orders",
+    "body": {
+      "customerId": 1,
+      "warehouseId": 1,
+      "deliveryAddress": "Quận 1, TP.HCM",
+      "submitNow": true,
+      "lines": [
+        { "productId": 1, "quantity": 10 }
+      ]
+    }
+  }
+}

@@ -1,0 +1,76 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Người dùng và phân quyền</h1>
+      <p class="subtle">Tài khoản đăng nhập theo vai trò quản trị, sales, logistics, kho và nhà máy.</p>
+    </div>
+  </div>
+  <%- include('partials/flash') %>
+  <section class="grid grid-2">
+    <form class="panel" action="/users" method="post">
+      <h2 class="section-title"><%= userAccount.id ? 'Sửa người dùng' : 'Thêm người dùng' %></h2>
+      <% if (userAccount.id) { %><input type="hidden" name="id" value="<%= userAccount.id %>"><% } %>
+      <div class="form-grid">
+        <div>
+          <label>Tên đăng nhập</label>
+          <input name="username" value="<%= userAccount.username || '' %>" required>
+        </div>
+        <div>
+          <label>Mật khẩu</label>
+          <input name="password" type="password" <%= userAccount.id ? '' : 'required' %>>
+        </div>
+        <div>
+          <label>Họ tên</label>
+          <input name="full_name" value="<%= userAccount.full_name || '' %>">
+        </div>
+        <div>
+          <label>Vai trò</label>
+          <select name="role" required>
+            <% roles.forEach((role) => { %>
+              <option value="<%= role %>" <%= userAccount.role === role ? 'selected' : '' %>><%= roleLabels[role] || role %></option>
+            <% }) %>
+          </select>
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" name="enabled" <%= userAccount.enabled === false ? '' : 'checked' %>>
+          Cho phép đăng nhập
+        </label>
+      </div>
+      <div class="actions">
+        <button type="submit">Lưu người dùng</button>
+        <% if (userAccount.id) { %><a class="button secondary" href="/users">Hủy sửa</a><% } %>
+      </div>
+    </form>
+
+    <div class="panel">
+      <h2 class="section-title">Danh sách người dùng</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Tài khoản</th>
+            <th>Họ tên</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <% users.forEach((item) => { %>
+            <tr>
+              <td><strong><%= item.username %></strong></td>
+              <td><%= item.full_name || '' %></td>
+              <td><%= roleLabels[item.role] || item.role %></td>
+              <td><span class="status <%= item.enabled ? 'status-completed' : 'status-cancelled' %>"><%= item.enabled ? 'Đang dùng' : 'Khóa' %></span></td>
+              <td><a href="/users/<%= item.id %>/edit">Sửa</a></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

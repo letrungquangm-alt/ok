@@ -1,0 +1,94 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Tổng quan vận hành</h1>
+      <p class="subtle">Theo dõi nhanh danh mục, đơn hàng đang chờ xử lý và tồn kho hiện tại.</p>
+    </div>
+    <a class="button secondary" href="/api/health" target="_blank">JSON API</a>
+  </div>
+  <%- include('partials/flash') %>
+
+  <section class="grid grid-3 metrics">
+    <article class="metric">
+      <span class="metric-label">Sản phẩm</span>
+      <strong class="metric-value"><%= counts.products %></strong>
+    </article>
+    <article class="metric">
+      <span class="metric-label">Khách hàng</span>
+      <strong class="metric-value"><%= counts.customers %></strong>
+    </article>
+    <article class="metric">
+      <span class="metric-label">Đơn hàng</span>
+      <strong class="metric-value"><%= counts.orders %></strong>
+    </article>
+  </section>
+
+  <section class="grid grid-2 dashboard-grid">
+    <div class="panel">
+      <div class="section-head">
+        <h2 class="section-title">Đơn đang xử lý</h2>
+        <a href="/orders">Xem tất cả</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Mã đơn</th>
+            <th>Khách hàng</th>
+            <th>Trạng thái</th>
+            <th>Số lượng</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% pendingOrders.forEach((order) => { %>
+            <tr>
+              <td><a href="/orders/<%= order.id %>"><%= order.order_no %></a></td>
+              <td><%= order.customer_name %></td>
+              <td><span class="status status-<%= order.status.toLowerCase() %>"><%= statusLabels[order.status] %></span></td>
+              <td><%= order.total_quantity %></td>
+            </tr>
+          <% }) %>
+          <% if (pendingOrders.length === 0) { %>
+            <tr><td colspan="4" class="empty">Chưa có đơn đang xử lý.</td></tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-head">
+        <h2 class="section-title">Tồn kho nổi bật</h2>
+        <a href="/reports/inventory">Báo cáo tồn</a>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>Kho</th>
+            <th>Tồn</th>
+            <th>ĐVT</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% inventoryRows.forEach((row) => { %>
+            <tr>
+              <td><strong><%= row.product_code %></strong><br><span class="subtle"><%= row.product_name %></span></td>
+              <td><%= row.warehouse_code %></td>
+              <td class="number"><%= row.quantity %></td>
+              <td><%= row.unit %></td>
+            </tr>
+          <% }) %>
+          <% if (inventoryRows.length === 0) { %>
+            <tr><td colspan="4" class="empty">Chưa có tồn kho. Hãy tạo phiếu nhập và xác nhận.</td></tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

@@ -1,0 +1,31 @@
+<% if (currentUser) { %>
+  <nav class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">Warehouse JS</a>
+      <div class="nav-links">
+        <a href="/orders">Đơn hàng</a>
+        <% if (['ADMIN', 'SALES'].includes(currentUser.role)) { %>
+          <a href="/orders/new">Tạo đơn</a>
+        <% } %>
+        <% if (['ADMIN', 'FACTORY', 'WAREHOUSE'].includes(currentUser.role)) { %>
+          <a href="/receipts">Nhập kho</a>
+        <% } %>
+        <a href="/reports/inventory">Tồn kho</a>
+        <a href="/reports/inbound">Báo cáo nhập</a>
+        <a href="/reports/outbound">Báo cáo xuất</a>
+        <% if (currentUser.role === 'ADMIN') { %>
+          <a href="/products">Sản phẩm</a>
+          <a href="/customers">Khách hàng</a>
+          <a href="/warehouses">Kho</a>
+          <a href="/users">Người dùng</a>
+        <% } %>
+      </div>
+      <div class="user-box">
+        <span><%= currentUser.fullName || currentUser.username %> · <%= roleLabels[currentUser.role] || currentUser.role %></span>
+        <form action="/logout" method="post">
+          <button class="secondary compact" type="submit">Đăng xuất</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+<% } %>

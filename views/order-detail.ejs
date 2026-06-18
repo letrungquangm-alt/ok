@@ -1,0 +1,103 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title"><%= order.order_no %></h1>
+      <p class="subtle"><%= order.customer_code %> - <%= order.customer_name %></p>
+    </div>
+    <a class="button secondary" href="/orders">Quay lại</a>
+  </div>
+  <%- include('partials/flash') %>
+
+  <section class="panel detail-band">
+    <div>
+      <span class="metric-label">Trạng thái</span>
+      <span class="status status-<%= order.status.toLowerCase() %>"><%= statusLabels[order.status] || order.status %></span>
+    </div>
+    <div>
+      <span class="metric-label">Kho xuất</span>
+      <strong><%= order.warehouse_code %></strong>
+    </div>
+    <div>
+      <span class="metric-label">Ngày tạo</span>
+      <strong><%= formatDate(order.created_at) %></strong>
+    </div>
+    <div>
+      <span class="metric-label">Phiếu xuất</span>
+      <strong><%= issue ? issue.issue_no : '-' %></strong>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="section-head">
+      <h2 class="section-title">Thông tin giao hàng</h2>
+      <div class="actions no-margin">
+        <% if (['ADMIN', 'SALES'].includes(currentUser.role) && order.status === 'DRAFT') { %>
+          <form action="/orders/<%= order.id %>/submit" method="post"><button type="submit">Gửi đơn</button></form>
+        <% } %>
+        <% if (['ADMIN', 'LOGISTICS'].includes(currentUser.role) && order.status === 'SUBMITTED') { %>
+          <form action="/orders/<%= order.id %>/logistics-receive" method="post"><button type="submit">Logistics nhận</button></form>
+        <% } %>
+        <% if (['ADMIN', 'LOGISTICS'].includes(currentUser.role) && order.status === 'LOGISTICS_RECEIVED') { %>
+          <form action="/orders/<%= order.id %>/send-warehouse" method="post"><button type="submit">Chuyển kho</button></form>
+        <% } %>
+        <% if (['ADMIN', 'WAREHOUSE'].includes(currentUser.role) && order.status === 'WAREHOUSE_PROCESSING') { %>
+          <form action="/orders/<%= order.id %>/complete" method="post"><button type="submit">Xác nhận xuất</button></form>
+        <% } %>
+        <% if (['ADMIN', 'SALES'].includes(currentUser.role) && !['COMPLETED', 'CANCELLED'].includes(order.status)) { %>
+          <form action="/orders/<%= order.id %>/cancel" method="post"><button class="danger" type="submit">Hủy đơn</button></form>
+        <% } %>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div>
+        <span class="metric-label">Địa chỉ khách hàng</span>
+        <strong><%= order.customer_address || '-' %></strong>
+      </div>
+      <div>
+        <span class="metric-label">Điện thoại</span>
+        <strong><%= order.customer_phone || '-' %></strong>
+      </div>
+      <div class="full">
+        <span class="metric-label">Địa chỉ giao hàng</span>
+        <strong><%= order.delivery_address || '-' %></strong>
+      </div>
+      <div class="full">
+        <span class="metric-label">Ghi chú</span>
+        <span><%= order.notes || '-' %></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">Dòng sản phẩm</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>Sản phẩm</th>
+          <th>Tên</th>
+          <th>ĐVT</th>
+          <th>Số lượng</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% lines.forEach((line) => { %>
+          <tr>
+            <td><strong><%= line.product_code %></strong></td>
+            <td><%= line.product_name %></td>
+            <td><%= line.unit %></td>
+            <td class="number"><%= line.quantity %></td>
+            <td><%= formatMoney(line.unit_price) %></td>
+            <td><%= formatMoney(Number(line.unit_price) * Number(line.quantity)) %></td>
+          </tr>
+        <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

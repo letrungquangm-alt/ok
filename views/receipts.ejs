@@ -1,0 +1,114 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Nhập kho thành phẩm</h1>
+      <p class="subtle">Nhà máy tạo phiếu nhập, khi xác nhận hệ thống cộng tồn kho.</p>
+    </div>
+  </div>
+  <%- include('partials/flash') %>
+
+  <section class="panel">
+    <h2 class="section-title">Tạo phiếu nhập</h2>
+    <form action="/receipts" method="post" data-document-form>
+      <div class="form-grid">
+        <div>
+          <label>Kho nhận</label>
+          <select name="warehouse_id" required>
+            <% warehouses.forEach((warehouse) => { %>
+              <option value="<%= warehouse.id %>"><%= warehouse.code %> - <%= warehouse.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label>Nguồn nhà máy</label>
+          <input name="source_factory" value="Nhà máy chính">
+        </div>
+      </div>
+
+      <div class="table-wrap form-lines">
+        <table class="line-table" data-line-table>
+          <thead>
+          <tr>
+            <th>Sản phẩm</th>
+            <th>Số lượng</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+          <% for (let i = 0; i < 3; i += 1) { %>
+            <tr>
+              <td>
+                <select name="productIds">
+                  <option value="">Chọn sản phẩm</option>
+                  <% products.forEach((product) => { %>
+                    <option value="<%= product.id %>"><%= product.code %> - <%= product.name %></option>
+                  <% }) %>
+                </select>
+              </td>
+              <td><input name="quantities" type="number" min="1" step="1"></td>
+              <td><button class="secondary compact" type="button" data-remove-line>Xóa</button></td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <template data-line-template>
+        <tr>
+          <td>
+            <select name="productIds">
+              <option value="">Chọn sản phẩm</option>
+              <% products.forEach((product) => { %>
+                <option value="<%= product.id %>"><%= product.code %> - <%= product.name %></option>
+              <% }) %>
+            </select>
+          </td>
+          <td><input name="quantities" type="number" min="1" step="1"></td>
+          <td><button class="secondary compact" type="button" data-remove-line>Xóa</button></td>
+        </tr>
+      </template>
+
+      <div class="actions">
+        <button class="secondary" type="button" data-add-line>Thêm dòng</button>
+        <button type="submit" name="action" value="draft">Lưu nháp</button>
+        <button type="submit" name="action" value="confirm">Tạo và xác nhận</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">Danh sách phiếu nhập</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>Mã phiếu</th>
+          <th>Kho</th>
+          <th>Nguồn</th>
+          <th>Trạng thái</th>
+          <th>Số lượng</th>
+          <th>Ngày tạo</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% receipts.forEach((receipt) => { %>
+          <tr>
+            <td><a href="/receipts/<%= receipt.id %>"><%= receipt.receipt_no %></a></td>
+            <td><%= receipt.warehouse_code %></td>
+            <td><%= receipt.source_factory || '' %></td>
+            <td><span class="status status-<%= receipt.status.toLowerCase() %>"><%= statusLabels[receipt.status] || receipt.status %></span></td>
+            <td class="number"><%= receipt.total_quantity %></td>
+            <td><%= formatDate(receipt.created_at) %></td>
+          </tr>
+        <% }) %>
+        <% if (receipts.length === 0) { %>
+          <tr><td colspan="6" class="empty">Chưa có phiếu nhập.</td></tr>
+        <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

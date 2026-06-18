@@ -1,0 +1,60 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Đơn hàng xuất cho khách</h1>
+      <p class="subtle">Theo dõi trạng thái từ sales, logistics đến kho.</p>
+    </div>
+    <% if (['ADMIN', 'SALES'].includes(currentUser.role)) { %>
+      <a class="button" href="/orders/new">Tạo đơn hàng</a>
+    <% } %>
+  </div>
+  <%- include('partials/flash') %>
+
+  <section class="panel">
+    <form class="filter-bar" action="/orders" method="get">
+      <div>
+        <label>Trạng thái</label>
+        <select name="status">
+          <option value="">Tất cả</option>
+          <% statuses.forEach((status) => { %>
+            <option value="<%= status %>" <%= selectedStatus === status ? 'selected' : '' %>><%= statusLabels[status] || status %></option>
+          <% }) %>
+        </select>
+      </div>
+      <button class="secondary" type="submit">Lọc</button>
+      <a class="button secondary" href="/api/orders" target="_blank">JSON</a>
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead>
+        <tr>
+          <th>Mã đơn</th>
+          <th>Khách hàng</th>
+          <th>Kho</th>
+          <th>Trạng thái</th>
+          <th>Số lượng</th>
+          <th>Ngày tạo</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% orders.forEach((order) => { %>
+          <tr>
+            <td><a href="/orders/<%= order.id %>"><%= order.order_no %></a></td>
+            <td><strong><%= order.customer_code %></strong><br><span class="subtle"><%= order.customer_name %></span></td>
+            <td><%= order.warehouse_code %></td>
+            <td><span class="status status-<%= order.status.toLowerCase() %>"><%= statusLabels[order.status] || order.status %></span></td>
+            <td class="number"><%= order.total_quantity %></td>
+            <td><%= formatDate(order.created_at) %></td>
+          </tr>
+        <% }) %>
+        <% if (orders.length === 0) { %>
+          <tr><td colspan="6" class="empty">Chưa có đơn hàng.</td></tr>
+        <% } %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<%- include('partials/footer') %>

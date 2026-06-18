@@ -1,0 +1,15 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Báo cáo xuất kho</h1>
+      <p class="subtle">Tổng hợp các stock movement loại xuất sau khi kho xác nhận.</p>
+    </div>
+    <a class="button secondary" href="/api/reports/outbound?from=<%= from %>&to=<%= to %>" target="_blank">JSON</a>
+  </div>
+  <%- include('partials/flash') %>
+  <%- include('partials/report-filter', { action: '/reports/outbound', from, to }) %>
+  <%- include('partials/movement-table', { movements }) %>
+</main>
+<%- include('partials/footer') %>
