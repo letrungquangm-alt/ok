@@ -398,11 +398,12 @@
     .shop-card-body { display: flex; flex-direction: column; flex: 1; gap: 8px; padding: 12px; }
     .shop-card-cat { color: var(--copper); font-size: 11px; font-weight: 800; text-transform: uppercase; }
     .shop-card-name { color: var(--ink); font-size: 14px; font-weight: 700; line-height: 1.35; margin: 0; }
-    .shop-card-foot { align-items: center; display: flex; gap: 8px; justify-content: space-between; margin-top: auto; }
+    .shop-card-foot { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
     .shop-card-price { color: var(--green-2); font-size: 16px; font-weight: 900; }
     .shop-card-buy {
       background: var(--green); border: none; border-radius: 8px; color: #fff;
-      cursor: pointer; font-size: 13px; font-weight: 800; padding: 8px 12px; white-space: nowrap;
+      cursor: pointer; font-size: 13px; font-weight: 800; padding: 9px 12px; text-align: center;
+      white-space: nowrap; width: 100%;
     }
 
     @media (max-width: 768px) {
