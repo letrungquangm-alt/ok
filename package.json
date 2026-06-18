@@ -1,22 +1,28 @@
 {
-  "name": "warehouse-js",
+  "name": "warehouse-frontend",
+  "private": true,
   "version": "1.0.0",
-  "description": "Web app quản lý sản phẩm, nhập kho, đơn hàng, logistics, xuất kho và báo cáo tồn kho.",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "check": "node --check server.js && node --check src/config/db.js && node --check src/config/schema.js && node --check src/middleware/auth.js && node --check src/routes/web.js && node --check src/routes/api.js && node --check src/services/business.js"
-  },
-  "engines": {
-    "node": ">=18"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "dotenv": "^16.4.7",
-    "ejs": "^3.1.10",
-    "express": "^4.21.2",
-    "express-session": "^1.18.1",
-    "pg": "^8.13.1"
+    "axios": "^1.6.7",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.21.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.4"
   }
 }

@@ -1,5 +1,20 @@
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret';
+
 function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      req.user = jwt.verify(token, JWT_SECRET);
+      return next();
+    } catch (err) {
+      return res.status(401).json({ error: 'Token không hợp lệ hoặc đã hết hạn' });
+    }
+  }
+
   if (req.session && req.session.user) {
+    req.user = req.session.user;
     return next();
   }
   if (req.originalUrl.startsWith('/api')) {
@@ -17,10 +32,12 @@ function guestOnly(req, res, next) {
 
 function requireRole(...roles) {
   return (req, res, next) => {
-    if (!req.session || !req.session.user) {
-      return requireAuth(req, res, next);
+    const user = req.user || (req.session && req.session.user);
+    if (!user) {
+      if (req.originalUrl.startsWith('/api')) return res.status(401).json({ error: 'Bạn cần đăng nhập' });
+      return res.redirect('/login');
     }
-    if (roles.includes(req.session.user.role)) {
+    if (roles.includes(user.role)) {
       return next();
     }
     if (req.originalUrl.startsWith('/api')) {

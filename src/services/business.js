@@ -112,11 +112,12 @@ async function createOrder({ customerId, warehouseId, deliveryAddress, notes, li
     await assertWarehouse(client, warehouseId);
 
     const status = submitNow ? STATUS.SUBMITTED : STATUS.DRAFT;
+    const submittedAt = submitNow ? new Date() : null;
     const orderResult = await client.query(
       `INSERT INTO sales_orders(order_no, customer_id, warehouse_id, delivery_address, status, created_by, notes, submitted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, CASE WHEN $5 = 'SUBMITTED' THEN NOW() ELSE NULL END)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [documentNumber('SO'), customerId, warehouseId, deliveryAddress || '', status, username, notes || '']
+      [documentNumber('SO'), customerId, warehouseId, deliveryAddress || '', status, username, notes || '', submittedAt]
     );
     const order = orderResult.rows[0];
 

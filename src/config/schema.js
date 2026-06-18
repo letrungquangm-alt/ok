@@ -1,11 +1,20 @@
 const bcrypt = require('bcryptjs');
 const { query } = require('./db');
 
-const roles = ['ADMIN', 'SALES', 'LOGISTICS', 'WAREHOUSE', 'FACTORY'];
+const roles = ['ADMIN', 'QUANLY', 'NHANVIEN', 'KHACH'];
 
 async function initDb() {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL chưa được cấu hình. Hãy dùng Neon connection string trong .env hoặc Render Environment.');
+  }
+
+  if (process.env.RESET_DB === 'true') {
+    console.log('🔄 Đang dọn dẹp và Reset Database cũ...');
+    await query(`
+      DROP TABLE IF EXISTS stock_movements, stock_issue_lines, stock_issues,
+      sales_order_lines, sales_orders, inbound_receipt_lines, inbound_receipts,
+      inventory, users, warehouses, customers, products CASCADE;
+    `);
   }
 
   await query(`
@@ -20,6 +29,10 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  
+  // Tự động thêm cột ảnh sản phẩm nếu chưa có
+  await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS image TEXT');
+  await query('ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT');
 
   await query(`
     CREATE TABLE IF NOT EXISTS customers (
@@ -55,6 +68,12 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  // Tự động thêm cột avatar nếu chưa có
+  await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT');
+  await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)');
+  await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT');
+  await query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)');
 
   await query(`
     CREATE TABLE IF NOT EXISTS inventory (
@@ -107,6 +126,11 @@ async function initDb() {
       cancelled_at TIMESTAMPTZ
     )
   `);
+
+  // Thêm các cột phục vụ Đơn hàng Online từ Web
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS is_web_order BOOLEAN DEFAULT FALSE');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS tracking_code VARCHAR(100)');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS estimated_delivery TIMESTAMPTZ');
 
   await query(`
     CREATE TABLE IF NOT EXISTS sales_order_lines (
@@ -162,11 +186,9 @@ async function initDb() {
 }
 
 async function seedData() {
-  await seedUser('admin', 'admin123', 'Quản trị hệ thống', 'ADMIN');
-  await seedUser('sales', 'sales123', 'Nhân viên sales', 'SALES');
-  await seedUser('logistics', 'logistics123', 'Điều phối logistics', 'LOGISTICS');
-  await seedUser('warehouse', 'warehouse123', 'Thủ kho', 'WAREHOUSE');
-  await seedUser('factory', 'factory123', 'Nhà máy', 'FACTORY');
+  await seedUser('admin', 'admin123', 'Quản trị tối cao', 'ADMIN');
+  await seedUser('quanly', 'quanly123', 'Quản lý cửa hàng', 'QUANLY');
+  await seedUser('nhanvien', 'nhanvien123', 'Nhân viên vận hành', 'NHANVIEN');
 
   await query(
     `INSERT INTO products(code, name, unit, category, reference_price)
