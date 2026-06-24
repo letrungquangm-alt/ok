@@ -14,7 +14,7 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [avatar, setAvatar] = useState(user.avatar || '');
   const [showPasswordForm, setShowPasswordForm] = useState(false);
-  const [showNameForm, setShowNameForm] = useState(false);
+  const [showInfoForm, setShowInfoForm] = useState(false);
   const [email, setEmail] = useState(user.email || '');
   const [phone, setPhone] = useState(user.phone || '');
   const [address, setAddress] = useState(user.address || '');
@@ -42,15 +42,17 @@ export default function ProfilePage() {
     setShowPasswordForm(!showPasswordForm);
   };
 
-  const toggleNameForm = () => {
-    if (showNameForm) {
+  const toggleInfoForm = () => {
+    if (showInfoForm) {
       setFullName(user.fullName || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
     }
-    setShowNameForm(!showNameForm);
+    setShowInfoForm(!showInfoForm);
   };
 
   // Kiểm tra xem có sự thay đổi nào không
-  const isChanged = fullName !== (user.fullName || '') || phone !== (user.phone || '') || address !== (user.address || '') || email !== (user.email || '') || avatar !== (user.avatar || '') || newPassword !== '';
+  const isChanged = fullName !== (user.fullName || '') || phone !== (user.phone || '') || email !== (user.email || '') || avatar !== (user.avatar || '') || newPassword !== '';
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
@@ -119,43 +121,38 @@ export default function ProfilePage() {
             <button 
               type="button" 
               className="btn"
-              onClick={toggleNameForm}
+              onClick={toggleInfoForm}
               style={{ 
                 width: '100%', 
                 justifyContent: 'space-between',
-                background: showNameForm ? '#e4e9e6' : 'transparent',
+                background: showInfoForm ? '#e4e9e6' : 'transparent',
                 border: '1px solid var(--line)',
                 color: 'var(--ink)',
-                marginBottom: showNameForm ? '16px' : '0'
+                marginBottom: showInfoForm ? '16px' : '0'
               }}
             >
-              <span>Đổi họ và tên hiển thị</span>
-              <span style={{ fontSize: '12px', transition: 'transform 0.3s', transform: showNameForm ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              <span>Đổi thông tin cá nhân</span>
+              <span style={{ fontSize: '12px', transition: 'transform 0.3s', transform: showInfoForm ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
             </button>
             
-            {showNameForm && (
+            {showInfoForm && (
               <div className="page-transition" style={{ background: '#f9fbf9', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Họ và tên hiển thị</span>
+                  <input style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Nhập họ và tên..." required />
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Email liên hệ</span>
+                  <input type="email" style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={email} onChange={e => setEmail(e.target.value)} placeholder="VD: mail@example.com" />
+                </div>
+
                 <div style={{ marginBottom: '0' }}>
-                  <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Họ và tên hiển thị mới</span>
-                  <input style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Nhập họ và tên mới..." required />
+                  <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Số điện thoại</span>
+                  <input style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="VD: 0909123456..." />
                 </div>
               </div>
             )}
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <span className="label">Email liên hệ</span>
-            <input type="email" style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px' }} value={email} onChange={e => setEmail(e.target.value)} placeholder="VD: mail@example.com" />
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <span className="label">Số điện thoại giao hàng (Bắt buộc khi đặt hàng)</span>
-            <input style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px' }} value={phone} onChange={e => setPhone(e.target.value)} placeholder="VD: 0909123456..." />
-          </div>
-
-          <div style={{ marginBottom: '24px' }}>
-            <span className="label">Địa chỉ giao hàng chi tiết</span>
-            <textarea style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', minHeight: '80px', fontFamily: 'inherit' }} value={address} onChange={e => setAddress(e.target.value)} placeholder="Nhập địa chỉ nhà..."></textarea>
           </div>
 
           <div style={{ marginBottom: '24px' }}>

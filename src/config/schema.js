@@ -109,6 +109,20 @@ async function initDb() {
   `);
 
   await query(`
+    CREATE TABLE IF NOT EXISTS customer_lookups (
+      id BIGSERIAL PRIMARY KEY,
+      code VARCHAR(40) NOT NULL UNIQUE,
+      full_name VARCHAR(180) NOT NULL,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      phone VARCHAR(40),
+      status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+      otp VARCHAR(10),
+      otp_expiry TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
     CREATE TABLE IF NOT EXISTS sales_orders (
       id BIGSERIAL PRIMARY KEY,
       order_no VARCHAR(40) NOT NULL UNIQUE,
@@ -127,10 +141,22 @@ async function initDb() {
     )
   `);
 
-  // Thêm các cột phục vụ Đơn hàng Online từ Web
   await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS is_web_order BOOLEAN DEFAULT FALSE');
   await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS tracking_code VARCHAR(100)');
   await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS estimated_delivery TIMESTAMPTZ');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS lookup_code VARCHAR(40) REFERENCES customer_lookups(code)');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS drive_link TEXT');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS drive_password VARCHAR(100)');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS price NUMERIC(18,2)');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS folder_name VARCHAR(255)');
+  await query("ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS lookup_status VARCHAR(50) DEFAULT 'Bình thường'");
+  await query("ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS link_status VARCHAR(50) DEFAULT 'Đang xem xét'");
+  await query("ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS package_type VARCHAR(30) DEFAULT 'Trả phí'");
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS link_provision_time TIMESTAMPTZ');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS expiry_date TIMESTAMPTZ');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS reprovision_expiry_date TIMESTAMPTZ');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS preview_image TEXT');
+  await query('ALTER TABLE sales_orders ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE');
 
   await query(`
     CREATE TABLE IF NOT EXISTS sales_order_lines (

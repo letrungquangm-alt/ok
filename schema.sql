@@ -64,6 +64,17 @@ CREATE TABLE IF NOT EXISTS inbound_receipt_lines (
   product_id BIGINT NOT NULL REFERENCES products(id),
   quantity BIGINT NOT NULL CHECK (quantity > 0)
 );
+CREATE TABLE IF NOT EXISTS customer_lookups (
+  id BIGSERIAL PRIMARY KEY,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  full_name VARCHAR(180) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  phone VARCHAR(40),
+  status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+  otp VARCHAR(10),
+  otp_expiry TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 CREATE TABLE IF NOT EXISTS sales_orders (
   id BIGSERIAL PRIMARY KEY,
@@ -79,7 +90,23 @@ CREATE TABLE IF NOT EXISTS sales_orders (
   logistics_received_at TIMESTAMPTZ,
   warehouse_processing_at TIMESTAMPTZ,
   completed_at TIMESTAMPTZ,
-  cancelled_at TIMESTAMPTZ
+  cancelled_at TIMESTAMPTZ,
+  is_web_order BOOLEAN DEFAULT FALSE,
+  tracking_code VARCHAR(100),
+  estimated_delivery TIMESTAMPTZ,
+  lookup_code VARCHAR(40) REFERENCES customer_lookups(code),
+  drive_link TEXT,
+  drive_password VARCHAR(100),
+  price NUMERIC(18,2),
+  folder_name VARCHAR(255),
+  lookup_status VARCHAR(50) DEFAULT 'Bình thường',
+  link_status VARCHAR(50) DEFAULT 'Đang xem xét',
+  package_type VARCHAR(30) DEFAULT 'Trả phí',
+  link_provision_time TIMESTAMPTZ,
+  expiry_date TIMESTAMPTZ,
+  reprovision_expiry_date TIMESTAMPTZ,
+  preview_image TEXT,
+  is_paid BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS sales_order_lines (

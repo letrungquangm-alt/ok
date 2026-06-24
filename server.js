@@ -1,93 +1,43 @@
 require('dotenv').config();
 
 const express = require('express');
-const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
 const { initDb } = require('./src/config/schema');
-const { attachLocals } = require('./src/middleware/auth');
-const webRoutes = require('./src/routes/web');
 const apiRoutes = require('./src/routes/api');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-session-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 8,
-  },
-}));
-app.use(attachLocals);
 
-app.locals.roleLabels = {
-  ADMIN: 'Quản trị',
-  SALES: 'Sales',
-  LOGISTICS: 'Logistics',
-  WAREHOUSE: 'Kho',
-  FACTORY: 'Nhà máy',
-};
-
-app.locals.statusLabels = {
-  DRAFT: 'Nháp',
-  SUBMITTED: 'Đã gửi',
-  LOGISTICS_RECEIVED: 'Logistics đã nhận',
-  WAREHOUSE_PROCESSING: 'Kho đang xử lý',
-  COMPLETED: 'Hoàn tất',
-  CANCELLED: 'Đã hủy',
-  CONFIRMED: 'Đã nhập kho',
-};
-
-app.locals.formatDate = (value) => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(date);
-};
-
-app.locals.formatMoney = (value) => {
-  const num = Number(value || 0);
-  const validNum = isNaN(num) ? 0 : num;
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(validNum);
-};
-
+// API routes
 app.use('/api', apiRoutes);
-app.use(webRoutes);
 
-app.use((req, res) => {
-  res.status(404).render('error', { title: 'Không tìm thấy', error: 'Trang không tồn tại' });
+// Phục vụ React SPA cho tất cả các định tuyến khác
+app.get('*any', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
+// Xử lý lỗi 404 cho API
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Đường dẫn API không tồn tại' });
+});
+
+// Xử lý lỗi 500 cho API
 app.use((error, req, res, next) => {
   const status = error.status || 500;
-  if (req.path.startsWith('/api')) {
-    return res.status(status).json({ error: error.message || 'Có lỗi xảy ra' });
-  }
-  return res.status(status).render('error', {
-    title: 'Có lỗi xảy ra',
-    error: error.message || 'Có lỗi xảy ra',
-  });
+  console.error('Lỗi Server:', error);
+  res.status(status).json({ error: error.message || 'Có lỗi xảy ra trên server' });
 });
 
 initDb()

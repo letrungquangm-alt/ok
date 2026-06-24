@@ -17,7 +17,7 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       // Chuyển hướng vào trang trong
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại');
     }
@@ -28,11 +28,42 @@ export default function LoginPage() {
       <form 
         className="panel"
         onSubmit={handleLogin} 
-        style={{ width: '100%', maxWidth: '360px', padding: '32px' }}
+        style={{ width: '100%', maxWidth: '360px', padding: '32px', position: 'relative' }}
       >
-        <div className="brand" style={{ justifyContent: 'center', marginBottom: '24px' }}>
-          <span className="brand-mark">S</span>
-          <span>Sốp Pi</span>
+        {/* Nút mũi tên quay về trang chủ */}
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            background: 'none',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            color: 'var(--muted)',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'color 0.2s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--ink)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)'; }}
+          title="Quay lại trang chủ"
+        >
+          ←
+        </button>
+
+        <div 
+          className="brand" 
+          onClick={() => navigate('/')}
+          style={{ justifyContent: 'center', marginBottom: '24px', cursor: 'pointer' }}
+          title="Về trang chủ"
+        >
+          <span className="brand-mark">📸</span>
+          <span>HoangKiet</span>
         </div>
         {error && <div style={{ color: 'var(--red)', fontSize: '14px', textAlign: 'center', marginBottom: '16px' }}>{error}</div>}
         
@@ -46,10 +77,6 @@ export default function LoginPage() {
         </div>
         
         <button type="submit" className="btn primary" style={{ width: '100%', marginBottom: '16px' }}>Vào hệ thống</button>
-
-        <div style={{ textAlign: 'center', fontSize: '14px', color: 'var(--muted)' }}>
-          Chưa có tài khoản? <Link to="/register" style={{ color: 'var(--green-2)', fontWeight: 'bold', textDecoration: 'underline' }}>Đăng ký ngay</Link>
-        </div>
       </form>
     </div>
   );

@@ -15,6 +15,14 @@ const {
 
 const router = express.Router();
 
+function removeVietnameseTones(str) {
+  if (!str) return '';
+  let result = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  result = result.replace(/đ/g, "d").replace(/Đ/g, "D");
+  result = result.replace(/[^a-zA-Z0-9]/g, "");
+  return result.toUpperCase();
+}
+
 router.post('/login', async (req, res, next) => {
   try {
     const username = String(req.body.username || '').trim().toLowerCase();
@@ -51,6 +59,365 @@ router.post('/register', async (req, res, next) => {
     res.status(201).json({ message: 'Đăng ký thành công' });
   } catch (error) {
     if (error.code === '23505') return res.status(400).json({ error: 'Tên đăng nhập đã tồn tại' });
+    next(error);
+  }
+});
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-jwt-secret';
+
+function parseOptionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      req.user = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      // Ignore invalid/expired token for optional authentication
+    }
+  }
+  next();
+}
+
+router.get('/products', async (req, res, next) => {
+  try {
+    const result = await query('SELECT * FROM products ORDER BY code');
+    res.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/shop/order', parseOptionalAuth, async (req, res, next) => {
+  try {
+    const user = req.user;
+    let fullName, phone, address, username;
+
+    if (user) {
+      fullName = req.body.fullName || user.fullName;
+      phone = req.body.phone || user.phone;
+      address = req.body.address || user.address;
+      username = user.username;
+    } else {
+      fullName = req.body.fullName;
+      phone = req.body.phone;
+      address = req.body.address;
+      username = 'guest';
+    }
+
+    if (!fullName || !phone || !address) {
+      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Địa chỉ nhận hàng' });
+    }
+
+    // Tạo khách vãng lai nếu chưa có
+    let cRes = await query(`SELECT id FROM customers WHERE code = 'WEB_GUEST'`);
+    if (cRes.rows.length === 0) {
+      cRes = await query(`INSERT INTO customers(code, name, address, phone) VALUES ('WEB_GUEST', 'Khách Đặt Web', 'Hệ thống tự tạo', '000') RETURNING id`);
+    }
+    
+    const wRes = await query(`SELECT id FROM warehouses LIMIT 1`);
+    if (wRes.rows.length === 0) return res.status(400).json({ error: 'Hệ thống chưa có kho xử lý' });
+
+    const order = await createOrder({
+      customerId: cRes.rows[0].id,
+      warehouseId: wRes.rows[0].id,
+      deliveryAddress: `[${fullName}] - SĐT: ${phone} - Đ/c: ${address}`,
+      notes: req.body.notes || (user ? 'Đơn hàng từ Web' : 'Đơn hàng từ Web (Khách vãng lai)'),
+      lines: req.body.lines,
+      username: username,
+      submitNow: false
+    });
+
+    await query(`UPDATE sales_orders SET is_web_order = TRUE WHERE id = $1`, [order.id]);
+    res.json({ message: 'Đặt hàng thành công!' });
+  } catch (error) { next(error); }
+});
+
+// Public Lookup Endpoints
+function generateRandomCode(length = 6) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+router.post('/lookups', async (req, res, next) => {
+  try {
+    const { email, fullName, phone } = req.body;
+    if (!email || !fullName || !phone) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp đầy đủ thông tin: Email, Họ tên và Số điện thoại' });
+    }
+    
+    const existing = await query('SELECT code FROM customer_lookups WHERE email = $1', [email.trim().toLowerCase()]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ 
+        code: 'EMAIL_EXISTS',
+        error: 'Email này đã đăng ký mã tra cứu trước đó. Mỗi email chỉ có 1 mã duy nhất. Vui lòng dùng tính năng "Quên mã" hoặc liên hệ Admin nếu muốn đổi mã.' 
+      });
+    }
+
+    let code;
+    let attempts = 0;
+    while (attempts < 10) {
+      code = generateRandomCode(6);
+      const dup = await query('SELECT id FROM customer_lookups WHERE code = $1', [code]);
+      if (dup.rows.length === 0) break;
+      attempts++;
+    }
+    
+    await query(
+      `INSERT INTO customer_lookups(code, full_name, email, phone) VALUES ($1, $2, $3, $4)`,
+      [code, fullName.trim(), email.trim().toLowerCase(), phone.trim()]
+    );
+    
+    res.status(201).json({ code, message: 'Tạo mã tra cứu thành công!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/lookups/forgot', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Vui lòng nhập Email' });
+
+    const customerRes = await query('SELECT code, full_name FROM customer_lookups WHERE email = $1', [email.trim().toLowerCase()]);
+    const customer = customerRes.rows[0];
+    if (!customer) {
+      return res.status(404).json({ error: 'Không tìm thấy thông tin khách hàng với Email này.' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    await query(
+      'UPDATE customer_lookups SET otp = $1, otp_expiry = $2 WHERE email = $3',
+      [otp, otpExpiry, email.trim().toLowerCase()]
+    );
+
+    const { sendEmail } = require('../services/email');
+    await sendEmail({
+      to: email.trim().toLowerCase(),
+      subject: 'Mã xác nhận (OTP) để lấy lại mã tra cứu khách hàng',
+      text: `Xin chào ${customer.full_name},\n\nMã OTP để lấy lại mã tra cứu của bạn là: ${otp}\n\nMã OTP này có hiệu lực trong vòng 10 phút.`,
+      html: `<p>Xin chào <strong>${customer.full_name}</strong>,</p><p>Mã OTP để lấy lại mã tra cứu của bạn là: <strong style="font-size: 18px; color: #10b981;">${otp}</strong></p><p>Mã OTP này có hiệu lực trong vòng 10 phút.</p>`,
+    });
+
+    res.json({ message: 'Mã xác nhận OTP đã được gửi về email của bạn.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/lookups/verify', async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ error: 'Thiếu Email hoặc mã OTP' });
+
+    const customerRes = await query(
+      'SELECT code, otp, otp_expiry FROM customer_lookups WHERE email = $1',
+      [email.trim().toLowerCase()]
+    );
+    const customer = customerRes.rows[0];
+    if (!customer) return res.status(404).json({ error: 'Không tìm thấy Email này' });
+
+    if (customer.otp !== otp || new Date() > new Date(customer.otp_expiry)) {
+      return res.status(400).json({ error: 'Mã OTP không chính xác hoặc đã hết hạn.' });
+    }
+
+    await query('UPDATE customer_lookups SET otp = NULL, otp_expiry = NULL WHERE email = $1', [email.trim().toLowerCase()]);
+
+    res.json({ code: customer.code });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/lookups/search', async (req, res, next) => {
+  try {
+    const { code } = req.query;
+    if (!code) return res.status(400).json({ error: 'Thiếu mã tra cứu' });
+
+    const lookupRes = await query('SELECT * FROM customer_lookups WHERE code = $1', [code.trim().toUpperCase()]);
+    const lookup = lookupRes.rows[0];
+    if (!lookup) return res.status(404).json({ error: 'Không tìm thấy mã tra cứu này trên hệ thống.' });
+
+    const ordersRes = await query(
+      `SELECT o.*, 
+              (SELECT json_agg(json_build_object('id', l.id, 'productId', l.product_id, 'productName', p.name, 'quantity', l.quantity, 'unitPrice', l.unit_price))
+               FROM sales_order_lines l
+               JOIN products p ON p.id = l.product_id
+               WHERE l.order_id = o.id) as lines
+       FROM sales_orders o
+       WHERE o.lookup_code = $1
+       ORDER BY o.created_at DESC`,
+      [lookup.code]
+    );
+
+    res.json({
+      customer: {
+        fullName: lookup.full_name,
+        email: lookup.email,
+        phone: lookup.phone,
+        status: lookup.status
+      },
+      orders: ordersRes.rows
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/lookups/pay', async (req, res, next) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ error: 'Thiếu ID đơn hàng' });
+
+    const orderRes = await query('SELECT * FROM sales_orders WHERE id = $1', [orderId]);
+    const order = orderRes.rows[0];
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+
+    await query(
+      `UPDATE sales_orders 
+       SET is_paid = TRUE 
+       WHERE id = $1`,
+      [orderId]
+    );
+
+    res.json({ message: 'Thanh toán thành công!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Xác nhận đơn miễn phí (admin xác nhận, gửi mail ngay, chuyển thẳng sang COMPLETED)
+router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const orderRes = await query('SELECT * FROM sales_orders WHERE id = $1', [id]);
+    const order = orderRes.rows[0];
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    if (order.package_type !== 'Miễn phí') return res.status(400).json({ error: 'Đơn này không phải gói miễn phí' });
+    if (order.is_paid) return res.status(400).json({ error: 'Đơn hàng đã được xác nhận rồi' });
+
+    // Đánh dấu đã thanh toán (miễn phí) và hoàn thành luôn
+    await query(
+      `UPDATE sales_orders SET is_paid = TRUE, status = 'COMPLETED', completed_at = NOW() WHERE id = $1`,
+      [id]
+    );
+
+    // Gửi email ngay cho khách
+    const lookupRes = await query('SELECT * FROM customer_lookups WHERE code = $1', [order.lookup_code]);
+    const lookup = lookupRes.rows[0];
+    if (lookup && lookup.email) {
+      const { sendEmail } = require('../services/email');
+      const orderNoText = order.order_no;
+      const emailSubject = `[HoangKiet] Cập nhật thông tin đơn hàng ${orderNoText}`;
+
+      const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
+        `Chúng tôi đã nhận được đăng ký gói ảnh miễn phí của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
+        `Link Drive: ${order.drive_link || 'Chưa cung cấp'}\n` +
+        `Mật khẩu Drive: ${order.drive_password || 'Không có'}\n\n` +
+        `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
+        `Trân trọng,\nBan quản trị hệ thống.`;
+
+      const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
+        `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
+        `<p>Chúng tôi đã nhận được thông tin <strong>đăng ký gói ảnh miễn phí</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
+        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Google Drive</a></p>` : '') +
+        `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${order.drive_password || 'Không có'}</code></p>` +
+        `<br/>` +
+        `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
+        `<p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>` +
+        `</div>`;
+
+      await sendEmail({ to: lookup.email, subject: emailSubject, text: textMail, html: htmlMail })
+        .catch(err => console.error('Lỗi gửi email miễn phí:', err.message));
+    }
+
+    res.json({ message: 'Đã xác nhận và gửi email cho khách hàng thành công!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/orders/:id/payment-status', async (req, res, next) => {
+  try {
+    const result = await query("SELECT is_paid FROM sales_orders WHERE id = $1", [req.params.id]);
+    if (!result.rows[0]) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+    res.json({ isPaid: result.rows[0].is_paid });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/public-config', (req, res) => {
+  res.json({
+    bankBrand: process.env.SEPAY_BANK_BRAND || 'TCB',
+    accountNo: process.env.SEPAY_ACCOUNT_NO || '3624081006',
+    accountName: process.env.SEPAY_ACCOUNT_NAME || 'HOANG ANH KIET'
+  });
+});
+
+router.post('/sepay/webhook', async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    const expectedToken = process.env.SEPAY_WEBHOOK_TOKEN;
+    if (expectedToken && token !== expectedToken) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid webhook token' });
+    }
+
+    const { transactionContent, amountIn } = req.body;
+    if (!transactionContent) {
+      return res.status(400).json({ error: 'Missing transactionContent' });
+    }
+
+    const cleanContent = transactionContent.toUpperCase().replace(/[^A-Z0-9-]/g, ' ');
+    const tokens = cleanContent.split(/\s+/).filter(Boolean);
+
+    let matchedOrdersList = [];
+
+    // 1. Thử khớp mã đơn hàng (e.g. HK-XXXX)
+    for (const t of tokens) {
+      if (t.startsWith('HK-')) {
+        const orderRes = await query("SELECT * FROM sales_orders WHERE UPPER(order_no) = $1 AND is_paid = FALSE", [t]);
+        if (orderRes.rows[0]) {
+          matchedOrdersList.push(orderRes.rows[0]);
+          break;
+        }
+      }
+    }
+
+    // 2. Nếu không khớp mã đơn, thử khớp với mã tra cứu khách hàng (e.g. HU8WAD)
+    if (matchedOrdersList.length === 0) {
+      for (const t of tokens) {
+        if (t.length === 6) {
+          const lookupRes = await query("SELECT * FROM customer_lookups WHERE UPPER(code) = $1", [t]);
+          if (lookupRes.rows[0]) {
+            const ordersRes = await query("SELECT * FROM sales_orders WHERE lookup_code = $1 AND is_paid = FALSE", [t]);
+            matchedOrdersList = ordersRes.rows;
+            break;
+          }
+        }
+      }
+    }
+
+    if (matchedOrdersList.length === 0) {
+      return res.json({ status: 'ignored', message: 'No matching unpaid order or lookup code found in content' });
+    }
+
+    for (const order of matchedOrdersList) {
+      await query(
+        `UPDATE sales_orders 
+         SET is_paid = TRUE 
+         WHERE id = $1`,
+        [order.id]
+      );
+    }
+
+    res.json({ status: 'success', updated_count: matchedOrdersList.length });
+  } catch (error) {
     next(error);
   }
 });
@@ -114,17 +481,15 @@ router.delete('/profile', async (req, res, next) => {
 
 router.get('/dashboard', async (req, res, next) => {
   try {
-    const [products, orders, inbound, webOrders] = await Promise.all([
-      query('SELECT COUNT(*)::int AS count FROM products WHERE active = TRUE'),
-      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE status NOT IN ('COMPLETED', 'CANCELLED')"),
-      query("SELECT COALESCE(SUM(quantity), 0)::int AS count FROM stock_movements WHERE type = 'INBOUND' AND movement_at >= date_trunc('month', CURRENT_DATE)"),
-      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE is_web_order = TRUE AND status = 'DRAFT'")
+    const [pendingPaymentRes, pendingEmailRes, historyRes] = await Promise.all([
+      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE is_paid = FALSE AND status NOT IN ('COMPLETED', 'CANCELLED')"),
+      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE is_paid = TRUE AND status NOT IN ('COMPLETED', 'CANCELLED')"),
+      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE status IN ('COMPLETED', 'CANCELLED')")
     ]);
     res.json({
-      products: products.rows[0].count,
-      pendingOrders: orders.rows[0].count,
-      inboundMonth: inbound.rows[0].count,
-      pendingWebOrders: webOrders.rows[0].count
+      pendingPayment: pendingPaymentRes.rows[0].count,
+      pendingEmail: pendingEmailRes.rows[0].count,
+      historyOrders: historyRes.rows[0].count
     });
   } catch (error) {
     next(error);
@@ -175,14 +540,6 @@ router.delete('/users/:id', requireRole('ADMIN', 'QUANLY'), async (req, res, nex
   } catch (error) { next(error); }
 });
 
-router.get('/products', async (req, res, next) => {
-  try {
-    const result = await query('SELECT * FROM products ORDER BY code');
-    res.json({ data: result.rows });
-  } catch (error) {
-    next(error);
-  }
-});
 
 router.post('/products', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
   try {
@@ -283,6 +640,55 @@ router.get('/inventory', async (req, res, next) => {
   }
 });
 
+router.get('/receipts', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    const result = await query(`
+      SELECT r.*, w.code AS warehouse_code, w.name AS warehouse_name,
+             COALESCE(SUM(l.quantity), 0)::bigint AS total_quantity
+      FROM inbound_receipts r
+      JOIN warehouses w ON w.id = r.warehouse_id
+      LEFT JOIN inbound_receipt_lines l ON l.receipt_id = r.id
+      GROUP BY r.id, w.id
+      ORDER BY r.created_at DESC
+    `);
+    res.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/receipts/:id', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    const receiptRes = await query(`
+      SELECT r.*, w.code AS warehouse_code, w.name AS warehouse_name
+      FROM inbound_receipts r
+      JOIN warehouses w ON w.id = r.warehouse_id
+      WHERE r.id = $1
+    `, [req.params.id]);
+    
+    if (receiptRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy phiếu nhập' });
+    }
+    
+    const linesRes = await query(`
+      SELECT l.*, p.code AS product_code, p.name AS product_name, p.unit
+      FROM inbound_receipt_lines l
+      JOIN products p ON p.id = l.product_id
+      WHERE l.receipt_id = $1
+      ORDER BY l.id
+    `, [req.params.id]);
+    
+    res.json({
+      data: {
+        ...receiptRes.rows[0],
+        lines: linesRes.rows
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/receipts', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
   try {
     const receipt = await createReceipt({
@@ -329,6 +735,228 @@ router.get('/orders', async (req, res, next) => {
   }
 });
 
+router.post('/orders/lookup-create', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const { lookupCode, driveLink, drivePassword, price, packageType, notes, productName, linkProvisionTime } = req.body;
+    if (!lookupCode) return res.status(400).json({ error: 'Thiếu mã tra cứu của khách hàng' });
+    if (!productName) return res.status(400).json({ error: 'Thiếu tên sản phẩm' });
+
+    const lookupRes = await query('SELECT * FROM customer_lookups WHERE code = $1', [lookupCode.trim().toUpperCase()]);
+    const lookup = lookupRes.rows[0];
+    if (!lookup) return res.status(400).json({ error: 'Mã tra cứu không tồn tại trên hệ thống' });
+
+    let cRes = await query(`SELECT id FROM customers WHERE code = 'WEB_GUEST'`);
+    if (cRes.rows.length === 0) {
+      cRes = await query(`INSERT INTO customers(code, name, address, phone) VALUES ('WEB_GUEST', 'Khách Đặt Web', 'Hệ thống tự tạo', '000') RETURNING id`);
+    }
+    const customerId = cRes.rows[0].id;
+    
+    const wRes = await query(`SELECT id FROM warehouses LIMIT 1`);
+    if (wRes.rows.length === 0) return res.status(400).json({ error: 'Hệ thống chưa cấu hình kho xử lý' });
+    const warehouseId = wRes.rows[0].id;
+
+    const cleanProdName = removeVietnameseTones(productName);
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const orderNo = `HK-${cleanProdName}${randomStr}`;
+    const orderStatus = 'DRAFT';
+
+    // Tính ngày hết hạn và hạn cấp lại từ thời gian cấp link (nếu có)
+    let provisionTime = null, expiryDate = null, reprovisionExpiryDate = null;
+    if (linkProvisionTime) {
+      provisionTime = new Date(linkProvisionTime);
+      expiryDate = new Date(provisionTime);
+      expiryDate.setMonth(expiryDate.getMonth() + 3);
+      reprovisionExpiryDate = new Date(expiryDate);
+      reprovisionExpiryDate.setDate(reprovisionExpiryDate.getDate() + 15);
+    }
+    
+    const orderResult = await query(
+      `INSERT INTO sales_orders(
+         order_no, customer_id, warehouse_id, delivery_address, status, created_by, notes,
+         lookup_code, drive_link, drive_password, price, package_type, is_web_order, folder_name,
+         link_provision_time, expiry_date, reprovision_expiry_date
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, TRUE, $13, $14, $15, $16) RETURNING *`,
+      [
+        orderNo, customerId, warehouseId,
+        `[${lookup.full_name}] - SĐT: ${lookup.phone || 'Chưa có'} - Email: ${lookup.email}`,
+        orderStatus, req.user.username, notes || '',
+        lookup.code, driveLink || '', drivePassword || '',
+        packageType === 'Miễn phí' ? 0 : Number(price || 0),
+        packageType || 'Trả phí',
+        productName,
+        provisionTime, expiryDate, reprovisionExpiryDate
+      ]
+    );
+
+    res.status(201).json({ message: 'Tạo đơn hàng tra cứu thành công!', data: orderResult.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/lookups', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const result = await query('SELECT * FROM customer_lookups ORDER BY created_at DESC');
+    res.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/lookups/:id', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM customer_lookups WHERE id = $1', [id]);
+    res.json({ message: 'Đã xóa mã tra cứu của khách hàng.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/lookups/:id/change-code', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const lookupRes = await query('SELECT code FROM customer_lookups WHERE id = $1', [id]);
+    const lookup = lookupRes.rows[0];
+    if (!lookup) return res.status(404).json({ error: 'Không tìm thấy thông tin khách hàng' });
+
+    let newCode;
+    let attempts = 0;
+    while (attempts < 10) {
+      newCode = generateRandomCode(6);
+      const dup = await query('SELECT id FROM customer_lookups WHERE code = $1', [newCode]);
+      if (dup.rows.length === 0) break;
+      attempts++;
+    }
+
+    const oldCode = lookup.code;
+
+    const { transaction: dbTransaction } = require('../config/db');
+    await dbTransaction(async (client) => {
+      await client.query('UPDATE customer_lookups SET code = $1 WHERE id = $2', [newCode, id]);
+      await client.query('UPDATE sales_orders SET lookup_code = $1 WHERE lookup_code = $2', [newCode, oldCode]);
+    });
+
+    res.json({ message: `Đã đổi mã tra cứu từ "${oldCode}" sang "${newCode}" thành công!`, newCode });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/orders/:id/lookup-update', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      folderName,
+      lookupStatus,
+      linkStatus,
+      packageType,
+      linkProvisionTime,
+      driveLink,
+      drivePassword,
+      previewImage,
+      notes
+    } = req.body;
+
+    const orderRes = await query('SELECT * FROM sales_orders WHERE id = $1', [id]);
+    const order = orderRes.rows[0];
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+
+    let provisionTime = linkProvisionTime ? new Date(linkProvisionTime) : null;
+    let expiryDate = null;
+    let reprovisionExpiryDate = null;
+
+    if (provisionTime && !isNaN(provisionTime.getTime())) {
+      expiryDate = new Date(provisionTime);
+      expiryDate.setMonth(expiryDate.getMonth() + 3);
+
+      reprovisionExpiryDate = new Date(expiryDate);
+      reprovisionExpiryDate.setDate(reprovisionExpiryDate.getDate() + 15);
+    }
+
+    await query(
+      `UPDATE sales_orders
+       SET folder_name = $1,
+           lookup_status = $2,
+           link_status = $3,
+           package_type = $4,
+           link_provision_time = $5,
+           expiry_date = $6,
+           reprovision_expiry_date = $7,
+           drive_link = $8,
+           drive_password = $9,
+           preview_image = $10,
+           notes = $11,
+           status = 'COMPLETED',
+           completed_at = NOW()
+       WHERE id = $12`,
+      [
+        folderName,
+        lookupStatus || 'Bình thường',
+        linkStatus || 'Đang xem xét',
+        packageType || 'Trả phí',
+        provisionTime,
+        expiryDate,
+        reprovisionExpiryDate,
+        driveLink || order.drive_link,
+        drivePassword || order.drive_password,
+        previewImage || order.preview_image,
+        notes || order.notes,
+        id
+      ]
+    );
+
+    const lookupRes = await query('SELECT * FROM customer_lookups WHERE code = $1', [order.lookup_code]);
+    const lookup = lookupRes.rows[0];
+
+    if (lookup) {
+      const { sendEmail } = require('../services/email');
+      
+      const isFree = packageType === 'Miễn phí';
+      const paymentStatus = isFree ? 'đăng ký gói ảnh miễn phí' : 'thanh toán gói ảnh';
+      const orderNoText = order.order_no;
+
+      const emailSubject = `[HoangKiet] Cập nhật thông tin đơn hàng ${orderNoText}`;
+      
+      const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
+        `Chúng tôi đã nhận được thông tin ${paymentStatus} của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
+        (previewImage ? `[Ảnh xem trước đính kèm trong email]\n\n` : '') +
+        `Link Drive: ${driveLink || order.drive_link || 'Chưa cung cấp'}\n` +
+        `Mật khẩu Drive: ${drivePassword || order.drive_password || 'Không có'}\n\n` +
+        `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
+        `Trân trọng,\nBan quản trị hệ thống.`;
+
+      let previewHtml = '';
+      if (previewImage) {
+        previewHtml = `<div style="margin: 20px 0;"><img src="${previewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+      }
+
+      const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
+        `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
+        `<p>Chúng tôi đã nhận được thông tin <strong>${paymentStatus}</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
+        `<h3>Ảnh xem trước của bạn:</h3>` +
+        previewHtml +
+        `<p><strong>Link Drive tải ảnh:</strong> <a href="${driveLink || order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Google Drive</a></p>` +
+        `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${drivePassword || order.drive_password || 'Không có'}</code></p>` +
+        `<br/>` +
+        `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
+        `<p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>` +
+        `</div>`;
+
+      await sendEmail({
+        to: lookup.email,
+        subject: emailSubject,
+        text: textMail,
+        html: htmlMail
+      }).catch(err => console.error('Failed to send update lookup email:', err.message));
+    }
+
+    res.json({ message: 'Cập nhật đơn hàng thành công và đã gửi email cho khách!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/orders', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
   try {
     const order = await createOrder({
@@ -346,34 +974,6 @@ router.post('/orders', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, r
   }
 });
 
-router.post('/shop/order', async (req, res, next) => {
-  try {
-    const user = req.user;
-    if (!user.phone || !user.address) return res.status(400).json({ error: 'Vui lòng cập nhật số điện thoại và địa chỉ trước khi đặt hàng' });
-
-    // Tạo khách vãng lai nếu chưa có
-    let cRes = await query(`SELECT id FROM customers WHERE code = 'WEB_GUEST'`);
-    if (cRes.rows.length === 0) {
-      cRes = await query(`INSERT INTO customers(code, name, address, phone) VALUES ('WEB_GUEST', 'Khách Đặt Web', 'Hệ thống tự tạo', '000') RETURNING id`);
-    }
-    
-    const wRes = await query(`SELECT id FROM warehouses LIMIT 1`);
-    if (wRes.rows.length === 0) return res.status(400).json({ error: 'Hệ thống chưa có kho xử lý' });
-
-    const order = await createOrder({
-      customerId: cRes.rows[0].id,
-      warehouseId: wRes.rows[0].id,
-      deliveryAddress: `[${user.fullName}] - SĐT: ${user.phone} - Đ/c: ${user.address}`,
-      notes: req.body.notes || 'Đơn hàng từ Web',
-      lines: req.body.lines,
-      username: user.username,
-      submitNow: false
-    });
-
-    await query(`UPDATE sales_orders SET is_web_order = TRUE WHERE id = $1`, [order.id]);
-    res.json({ message: 'Đặt hàng thành công!' });
-  } catch (error) { next(error); }
-});
 
 router.get('/my-orders', async (req, res, next) => {
   try {
@@ -422,12 +1022,20 @@ router.put('/orders/:id/tracking', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), a
 });
 
 router.delete('/orders/:id', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  const { id } = req.params;
   try {
-    const order = await query('SELECT status FROM sales_orders WHERE id = $1', [req.params.id]);
+    const order = await query('SELECT status FROM sales_orders WHERE id = $1', [id]);
     if (!order.rows[0]) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
-    if (order.rows[0].status !== 'CANCELLED') return res.status(400).json({ error: 'Chỉ có thể xóa đơn hàng đã hủy' });
-    await query('DELETE FROM sales_orders WHERE id = $1', [req.params.id]);
-    res.json({ message: 'Đã xóa đơn hàng' });
+    
+    const issueRes = await query('SELECT id FROM stock_issues WHERE order_id = $1', [id]);
+    if (issueRes.rows[0]) {
+      const issueId = issueRes.rows[0].id;
+      await query('DELETE FROM stock_issue_lines WHERE issue_id = $1', [issueId]);
+      await query('DELETE FROM stock_issues WHERE id = $1', [issueId]);
+    }
+    
+    await query('DELETE FROM sales_orders WHERE id = $1', [id]);
+    res.json({ message: 'Đã xóa đơn hàng thành công!' });
   } catch (error) { next(error); }
 });
 

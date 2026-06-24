@@ -8,6 +8,14 @@ export default function CartPage() {
   const [alertObj, setAlertObj] = useState(null);
   const navigate = useNavigate();
 
+  const userStr = localStorage.getItem('user');
+  const token = localStorage.getItem('token');
+  const user = userStr && token ? JSON.parse(userStr) : null;
+
+  const [fullName, setFullName] = useState(user?.fullName || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [address, setAddress] = useState(user?.address || '');
+
   useEffect(() => {
     const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
     setCart(savedCart);
@@ -30,28 +38,29 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
+    if (!fullName || !phone || !address) {
+      setAlertObj({
+        message: 'Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ nhận hàng trước khi Đặt hàng!'
+      });
+      return;
+    }
     
     const lines = cart.map(item => ({ productId: item.id, quantity: item.quantity }));
     
     try {
-      await api.post('/shop/order', { lines });
+      await api.post('/shop/order', { lines, fullName, phone, address });
       localStorage.removeItem('cart');
       setCart([]);
       setAlertObj({
-        message: '🎉 Chúc mừng! Đặt hàng thành công. Bạn có thể theo dõi đơn ở mục "Đơn mua của bạn".',
-        onClose: () => navigate('/my-orders')
+        message: user
+          ? '🎉 Chúc mừng! Đặt hàng thành công. Bạn có thể theo dõi đơn ở mục "Đơn mua của bạn".'
+          : '🎉 Chúc mừng! Đặt hàng thành công dưới tư cách Khách vãng lai.',
+        onClose: () => navigate(user ? '/my-orders' : '/shop')
       });
     } catch (err) {
-      if (err.response?.data?.error?.includes('cập nhật số điện thoại')) {
-        setAlertObj({
-          message: 'Vui lòng cập nhật Số điện thoại và Địa chỉ giao hàng trong Hồ sơ trước khi đặt hàng!',
-          onClose: () => navigate('/profile')
-        });
-      } else {
-        setAlertObj({
-          message: err.response?.data?.error || 'Lỗi đặt hàng'
-        });
-      }
+      setAlertObj({
+        message: err.response?.data?.error || 'Lỗi đặt hàng'
+      });
     }
   };
 
@@ -87,6 +96,43 @@ export default function CartPage() {
               <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'transparent' }} onClick={() => removeItem(item.id)}>Xóa</button>
             </div>
           ))}
+          
+          {/* Thông tin giao hàng */}
+          <div className="panel" style={{ marginTop: '16px', background: '#fff' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>Thông tin giao hàng</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <span className="label">Họ và tên người nhận</span>
+                <input 
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px' }} 
+                  value={fullName} 
+                  onChange={e => setFullName(e.target.value)} 
+                  placeholder="Nhập họ và tên..." 
+                  required 
+                />
+              </div>
+              <div>
+                <span className="label">Số điện thoại liên hệ</span>
+                <input 
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px' }} 
+                  value={phone} 
+                  onChange={e => setPhone(e.target.value)} 
+                  placeholder="Nhập số điện thoại..." 
+                  required 
+                />
+              </div>
+            </div>
+            <div>
+              <span className="label">Địa chỉ nhận hàng chi tiết</span>
+              <textarea 
+                style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', minHeight: '60px', fontFamily: 'inherit' }} 
+                value={address} 
+                onChange={e => setAddress(e.target.value)} 
+                placeholder="Nhập địa chỉ giao hàng..." 
+                required 
+              />
+            </div>
+          </div>
           
           <div className="panel" style={{ marginTop: '16px', background: '#f2f8f5', border: '1px solid #cce0d6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div><span style={{ color: 'var(--muted)' }}>Tổng thanh toán:</span><br/><strong style={{ fontSize: '24px', color: 'var(--green-2)' }}>{total.toLocaleString('vi-VN')} đ</strong></div>
