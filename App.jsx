@@ -18,7 +18,6 @@ const DashboardPage = () => {
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   const [lookups, setLookups] = useState([]);
   const [lookupCode, setLookupCode] = useState('');
-  const [showLookupDropdown, setShowLookupDropdown] = useState(false);
   const [productName, setProductName] = useState('');
   const [driveLink, setDriveLink] = useState('');
   const [drivePassword, setDrivePassword] = useState('');
@@ -181,68 +180,21 @@ const DashboardPage = () => {
               />
             </div>
 
-            <div style={{ marginBottom: '16px', position: 'relative' }}>
+            <div style={{ marginBottom: '16px' }}>
               <span className="label">Mã tra cứu khách hàng</span>
-              <input
-                type="text"
+              <select
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}
-                placeholder="Nhập hoặc chọn mã tra cứu..."
                 value={lookupCode}
-                onChange={e => {
-                  setLookupCode(e.target.value);
-                  setShowLookupDropdown(true);
-                }}
-                onFocus={() => setShowLookupDropdown(true)}
-                onBlur={() => {
-                  setTimeout(() => setShowLookupDropdown(false), 200);
-                }}
+                onChange={e => setLookupCode(e.target.value)}
                 required
-              />
-              {showLookupDropdown && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  maxHeight: '180px',
-                  overflowY: 'auto',
-                  background: '#fff',
-                  border: '1px solid var(--line)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  zIndex: 9999,
-                  marginTop: '4px'
-                }}>
-                  {lookups
-                    .filter(item => 
-                      item.code.toLowerCase().includes((lookupCode || '').toLowerCase()) || 
-                      item.full_name.toLowerCase().includes((lookupCode || '').toLowerCase())
-                    )
-                    .map(item => (
-                      <div
-                        key={item.id}
-                        style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}
-                        onMouseDown={() => {
-                          setLookupCode(item.code);
-                          setShowLookupDropdown(false);
-                        }}
-                        onMouseEnter={e => e.target.style.background = '#f5f5f5'}
-                        onMouseLeave={e => e.target.style.background = '#fff'}
-                      >
-                        <strong style={{ color: 'var(--green-2)' }}>{item.code}</strong>
-                        <span style={{ color: 'var(--muted)' }}>{item.full_name}</span>
-                      </div>
-                    ))}
-                  {lookups.filter(item => 
-                    item.code.toLowerCase().includes((lookupCode || '').toLowerCase()) || 
-                    item.full_name.toLowerCase().includes((lookupCode || '').toLowerCase())
-                  ).length === 0 && (
-                    <div style={{ padding: '10px', color: 'var(--muted)', textAlign: 'center', fontSize: '12px' }}>
-                      Không tìm thấy mã tra cứu phù hợp
-                    </div>
-                  )}
-                </div>
-              )}
+              >
+                <option value="">-- Chọn mã tra cứu --</option>
+                {lookups.map(item => (
+                  <option key={item.id} value={item.code}>
+                    {item.code} - {item.full_name} ({item.phone || 'Không có SĐT'})
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>

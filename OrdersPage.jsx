@@ -158,22 +158,6 @@ export default function OrdersPage({ isHistory = false }) {
     }
   };
 
-  const simulatePaymentScan = async () => {
-    if (!selectedOrderToPay) return;
-    setPayChecking(true);
-    setTimeout(async () => {
-      try {
-        await api.post('/lookups/pay', { orderId: selectedOrderToPay.id });
-        setPayChecking(false);
-        setPaySuccess(true);
-        fetchOrders();
-      } catch (err) {
-        setPayChecking(false);
-        alert('Lỗi khi mô phỏng thanh toán.');
-      }
-    }, 2500);
-  };
-
   const closePaymentModal = (wasSuccess = false) => {
     setSelectedOrderToPay(null);
     setPaySuccess(false);
@@ -395,7 +379,7 @@ export default function OrdersPage({ isHistory = false }) {
                                 o.package_type === 'Miễn phí' ? (
                                   <button className="btn ghost" style={{ color: 'var(--blue)', borderColor: 'var(--blue)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => handleConfirmFree(o)}>Xác nhận</button>
                                 ) : (
-                                  <button className="btn ghost" style={{ color: 'var(--green-2)', borderColor: 'var(--green-2)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => setSelectedOrderToPay(o)}>Mock Thanh Toán</button>
+                                  <button className="btn ghost" style={{ color: 'var(--green-2)', borderColor: 'var(--green-2)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => setSelectedOrderToPay(o)}>Thanh toán QR</button>
                                 )
                               )}
                             </>
@@ -712,17 +696,12 @@ export default function OrdersPage({ isHistory = false }) {
                     Đóng
                   </button>
                 ) : (
-                  <>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy thanh toán</button>
-                      <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
-                        {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
-                      </button>
-                    </div>
-                    <button type="button" className="btn ghost" style={{ color: 'var(--green-2)', borderColor: 'var(--green-2)', width: '100%' }} disabled={payChecking} onClick={simulatePaymentScan}>
-                      ⚡ Mock Thanh Toán (Mô phỏng)
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy thanh toán</button>
+                    <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
+                      {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>

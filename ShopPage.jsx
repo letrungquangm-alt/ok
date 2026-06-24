@@ -215,23 +215,6 @@ export default function ShopPage({ viewType = 'search' }) {
     }
   };
 
-  const simulatePaymentScan = async () => {
-    if (!selectedOrderToPay) return;
-    setPayChecking(true);
-
-    // Giả lập kiểm tra giao dịch qua Ngân hàng trong 2.5 giây
-    setTimeout(async () => {
-      try {
-        await api.post('/lookups/pay', { orderId: selectedOrderToPay.id });
-        setPayChecking(false);
-        setPaySuccess(true);
-      } catch (err) {
-        setPayChecking(false);
-        alert('Lỗi xác nhận thanh toán phía server.');
-      }
-    }, 2500);
-  };
-
   const closePaymentModal = () => {
     setSelectedOrderToPay(null);
     setPaySuccess(false);
@@ -856,17 +839,12 @@ export default function ShopPage({ viewType = 'search' }) {
                     Đóng
                   </button>
                 ) : (
-                  <>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy</button>
-                      <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
-                        {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
-                      </button>
-                    </div>
-                    <button type="button" className="btn ghost" style={{ color: 'var(--green-2)', borderColor: 'var(--green-2)', width: '100%' }} disabled={payChecking} onClick={simulatePaymentScan}>
-                      ⚡ Mock Thanh Toán (Mô phỏng)
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy</button>
+                    <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
+                      {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>

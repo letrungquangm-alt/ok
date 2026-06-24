@@ -324,7 +324,7 @@ router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
       const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
         `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
         `<p>Chúng tôi đã nhận được thông tin <strong>đăng ký gói ảnh miễn phí</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
-        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Drive</a></p>` : '') +
+        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` : '') +
         `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${order.drive_password || 'Không có'}</code></p>` +
         `<br/>` +
         `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
