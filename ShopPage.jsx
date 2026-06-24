@@ -964,23 +964,12 @@ export default function ShopPage({ viewType = 'search' }) {
                       ✓ Gói ảnh này đã hoàn tất thanh toán thành công.
                     </div>
                     {order.drive_link ? (
-                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px' }}>
-                        <div>
-                          <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Liên kết tải ảnh (Google Drive):</span>
-                          <br/>
-                          <a href={order.drive_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--green-2)', fontWeight: 'bold', textDecoration: 'underline', wordBreak: 'break-all' }}>
-                            {order.drive_link}
-                          </a>
-                        </div>
-                        {order.drive_password && (
-                          <div style={{ marginTop: '4px' }}>
-                            <span style={{ color: 'var(--muted)', fontSize: '12px' }}>Mật khẩu Drive:</span> <code style={{ background: '#eaeaea', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>{order.drive_password}</code>
-                          </div>
-                        )}
+                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '16px', borderRadius: '8px', fontSize: '13.5px', color: '#15803d', lineHeight: '1.5' }}>
+                        📧 <strong>Thông tin tải ảnh:</strong> Liên kết Drive và mật khẩu truy xuất đã được gửi tới email đăng ký của bạn. Vui lòng kiểm tra hộp thư đến (hoặc hộp thư rác/spam) để nhận ảnh.
                       </div>
                     ) : (
                       <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', padding: '16px', borderRadius: '8px', fontSize: '13px', color: '#1e40af', lineHeight: '1.5' }}>
-                        ℹ️ <strong>Thông báo:</strong> Thanh toán đã được ghi nhận. Thư mục ảnh đang được cập nhật, liên kết tải ảnh và mật khẩu sẽ sớm được gửi về email của bạn và hiển thị trực tiếp tại đây.
+                        ℹ️ <strong>Thông báo:</strong> Thanh toán đã được ghi nhận. Thư mục ảnh đang được cập nhật, liên kết tải ảnh và mật khẩu sẽ sớm được gửi về email của bạn.
                       </div>
                     )}
                   </div>
@@ -994,8 +983,9 @@ export default function ShopPage({ viewType = 'search' }) {
                       className="btn" 
                       style={{ background: 'var(--green-2)', color: '#fff', width: '100%', height: '42px', fontWeight: 'bold' }}
                       onClick={() => handleConfirmFreePackage(order.id)}
+                      disabled={searchLoading}
                     >
-                      ✓ Xác nhận nhận gói ảnh
+                      {searchLoading ? 'Đang xử lý...' : '✓ Xác nhận nhận gói ảnh'}
                     </button>
                   </div>
                 ) : (

@@ -18,6 +18,7 @@ const DashboardPage = () => {
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   const [lookups, setLookups] = useState([]);
   const [lookupCode, setLookupCode] = useState('');
+  const [showLookupDropdown, setShowLookupDropdown] = useState(false);
   const [productName, setProductName] = useState('');
   const [driveLink, setDriveLink] = useState('');
   const [drivePassword, setDrivePassword] = useState('');
@@ -29,6 +30,7 @@ const DashboardPage = () => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [linkProvisionTime, setLinkProvisionTime] = useState('');
+  const [previewImage, setPreviewImage] = useState('');
 
   const fetchStats = async () => {
     try {
@@ -60,6 +62,16 @@ const DashboardPage = () => {
     setDisplayPrice(num.toLocaleString('vi-VN'));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) return alert('Ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB');
+      const reader = new FileReader();
+      reader.onloadend = () => setPreviewImage(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
   }, []);
@@ -85,7 +97,8 @@ const DashboardPage = () => {
         packageType,
         notes,
         productName,
-        linkProvisionTime
+        linkProvisionTime,
+        previewImage
       });
       setSuccessMsg('Tạo đơn hàng thành công!');
       setLookupCode('');
@@ -97,6 +110,7 @@ const DashboardPage = () => {
       setPackageType('Trả phí');
       setNotes('');
       setLinkProvisionTime('');
+      setPreviewImage('');
       fetchStats();
       setTimeout(() => setSuccessMsg(''), 3000);
       setShowCreateOrderModal(false);
@@ -167,21 +181,68 @@ const DashboardPage = () => {
               />
             </div>
 
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '16px', position: 'relative' }}>
               <span className="label">Mã tra cứu khách hàng</span>
-              <select
+              <input
+                type="text"
                 style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }}
+                placeholder="Nhập hoặc chọn mã tra cứu..."
                 value={lookupCode}
-                onChange={e => setLookupCode(e.target.value)}
+                onChange={e => {
+                  setLookupCode(e.target.value);
+                  setShowLookupDropdown(true);
+                }}
+                onFocus={() => setShowLookupDropdown(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowLookupDropdown(false), 200);
+                }}
                 required
-              >
-                <option value="" disabled>-- Chọn mã tra cứu --</option>
-                {lookups.map(item => (
-                  <option key={item.id} value={item.code}>
-                    {item.code} - {item.full_name}
-                  </option>
-                ))}
-              </select>
+              />
+              {showLookupDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  maxHeight: '180px',
+                  overflowY: 'auto',
+                  background: '#fff',
+                  border: '1px solid var(--line)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 9999,
+                  marginTop: '4px'
+                }}>
+                  {lookups
+                    .filter(item => 
+                      item.code.toLowerCase().includes((lookupCode || '').toLowerCase()) || 
+                      item.full_name.toLowerCase().includes((lookupCode || '').toLowerCase())
+                    )
+                    .map(item => (
+                      <div
+                        key={item.id}
+                        style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}
+                        onMouseDown={() => {
+                          setLookupCode(item.code);
+                          setShowLookupDropdown(false);
+                        }}
+                        onMouseEnter={e => e.target.style.background = '#f5f5f5'}
+                        onMouseLeave={e => e.target.style.background = '#fff'}
+                      >
+                        <strong style={{ color: 'var(--green-2)' }}>{item.code}</strong>
+                        <span style={{ color: 'var(--muted)' }}>{item.full_name}</span>
+                      </div>
+                    ))}
+                  {lookups.filter(item => 
+                    item.code.toLowerCase().includes((lookupCode || '').toLowerCase()) || 
+                    item.full_name.toLowerCase().includes((lookupCode || '').toLowerCase())
+                  ).length === 0 && (
+                    <div style={{ padding: '10px', color: 'var(--muted)', textAlign: 'center', fontSize: '12px' }}>
+                      Không tìm thấy mã tra cứu phù hợp
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
@@ -244,12 +305,26 @@ const DashboardPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
                 <span className="label">Link Drive sản phẩm ảnh</span>
-                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Nhập link Google Drive..." value={driveLink} onChange={e => setDriveLink(e.target.value)} />
+                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Nhập link Drive..." value={driveLink} onChange={e => setDriveLink(e.target.value)} />
               </div>
               <div>
                 <span className="label">Mật khẩu Drive</span>
                 <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Mật khẩu (nếu có)..." value={drivePassword} onChange={e => setDrivePassword(e.target.value)} />
               </div>
+            </div>
+
+            {/* Upload Preview Image */}
+            <div style={{ marginBottom: '16px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <div style={{ flex: 1 }}>
+                <span className="label">Ảnh xem trước (Preview Image)</span>
+                <input type="file" accept="image/*" onChange={handleFileChange} style={{ fontSize: '13px' }} />
+                <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>Hỗ trợ định dạng JPG, PNG. Dưới 2MB.</div>
+              </div>
+              {previewImage && (
+                <div style={{ width: '120px', height: '80px', border: '1px solid var(--line)', borderRadius: '6px', overflow: 'hidden', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <img src={previewImage} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '24px' }}>

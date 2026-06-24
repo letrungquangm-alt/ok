@@ -324,7 +324,7 @@ router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
       const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
         `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
         `<p>Chúng tôi đã nhận được thông tin <strong>đăng ký gói ảnh miễn phí</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
-        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Google Drive</a></p>` : '') +
+        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Drive</a></p>` : '') +
         `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${order.drive_password || 'Không có'}</code></p>` +
         `<br/>` +
         `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
@@ -737,7 +737,7 @@ router.get('/orders', async (req, res, next) => {
 
 router.post('/orders/lookup-create', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
   try {
-    const { lookupCode, driveLink, drivePassword, price, packageType, notes, productName, linkProvisionTime } = req.body;
+    const { lookupCode, driveLink, drivePassword, price, packageType, notes, productName, linkProvisionTime, previewImage } = req.body;
     if (!lookupCode) return res.status(400).json({ error: 'Thiếu mã tra cứu của khách hàng' });
     if (!productName) return res.status(400).json({ error: 'Thiếu tên sản phẩm' });
 
@@ -774,8 +774,8 @@ router.post('/orders/lookup-create', requireRole('ADMIN', 'QUANLY'), async (req,
       `INSERT INTO sales_orders(
          order_no, customer_id, warehouse_id, delivery_address, status, created_by, notes,
          lookup_code, drive_link, drive_password, price, package_type, is_web_order, folder_name,
-         link_provision_time, expiry_date, reprovision_expiry_date
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, TRUE, $13, $14, $15, $16) RETURNING *`,
+         link_provision_time, expiry_date, reprovision_expiry_date, preview_image
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, TRUE, $13, $14, $15, $16, $17) RETURNING *`,
       [
         orderNo, customerId, warehouseId,
         `[${lookup.full_name}] - SĐT: ${lookup.phone || 'Chưa có'} - Email: ${lookup.email}`,
@@ -784,7 +784,8 @@ router.post('/orders/lookup-create', requireRole('ADMIN', 'QUANLY'), async (req,
         packageType === 'Miễn phí' ? 0 : Number(price || 0),
         packageType || 'Trả phí',
         productName,
-        provisionTime, expiryDate, reprovisionExpiryDate
+        provisionTime, expiryDate, reprovisionExpiryDate,
+        previewImage || null
       ]
     );
 
@@ -936,7 +937,7 @@ router.put('/orders/:id/lookup-update', requireRole('ADMIN', 'QUANLY'), async (r
         `<p>Chúng tôi đã nhận được thông tin <strong>${paymentStatus}</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
         `<h3>Ảnh xem trước của bạn:</h3>` +
         previewHtml +
-        `<p><strong>Link Drive tải ảnh:</strong> <a href="${driveLink || order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">Truy cập Google Drive</a></p>` +
+        `<p><strong>Link Drive tải ảnh:</strong> <a href="${driveLink || order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` +
         `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${drivePassword || order.drive_password || 'Không có'}</code></p>` +
         `<br/>` +
         `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +

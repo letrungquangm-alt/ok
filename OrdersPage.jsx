@@ -20,6 +20,7 @@ export default function OrdersPage({ isHistory = false }) {
   const [notes, setNotes] = useState('');
   
   const [alertMsg, setAlertMsg] = useState('');
+  const [updating, setUpdating] = useState(false);
   const [confirmObj, setConfirmObj] = useState(null);
   const [subTab, setSubTab] = useState('pending_email'); // 'pending_email' (chờ gửi mail/đã thanh toán) hoặc 'pending_payment' (chờ thanh toán)
 
@@ -77,6 +78,7 @@ export default function OrdersPage({ isHistory = false }) {
 
   const handleUpdateLookupOrder = async (e) => {
     e.preventDefault();
+    setUpdating(true);
     try {
       await api.put(`/orders/${selectedOrder.id}/lookup-update`, {
         folderName,
@@ -94,6 +96,8 @@ export default function OrdersPage({ isHistory = false }) {
       setAlertMsg('Cập nhật đơn hàng tra cứu thành công! Hệ thống đã tự động gửi mail tới khách.');
     } catch (err) {
       setAlertMsg(err.response?.data?.error || 'Lỗi cập nhật đơn hàng.');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -327,13 +331,29 @@ export default function OrdersPage({ isHistory = false }) {
                   return (
                     <tr key={o.id}>
                       <td>
-                        <strong style={{ color: 'var(--green-2)' }}>{o.lookup_code || 'N/A'}</strong>
-                        <br/>
-                        <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                          {o.is_web_order ? '🌐 Đặt từ Web' : '🏢 Tạo nội bộ'}
-                        </span>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          {o.preview_image ? (
+                            <img src={o.preview_image} alt="preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--line)' }} />
+                          ) : (
+                            <div style={{ width: '40px', height: '40px', background: '#fafafa', border: '1px solid var(--line)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'var(--muted)', textAlign: 'center' }}>Không ảnh</div>
+                          )}
+                          <div>
+                            <strong style={{ color: 'var(--green-2)' }}>{o.lookup_code || 'N/A'}</strong>
+                            <br/>
+                            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                              {o.is_web_order ? '🌐 Đặt từ Web' : '🏢 Tạo nội bộ'}
+                            </span>
+                          </div>
+                        </div>
                       </td>
-                      <td><strong>{o.order_no}</strong></td>
+                      <td>
+                        <strong>{o.order_no}</strong>
+                        {o.link_provision_time && (
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                            📅 Cấp link: <strong>{o.link_provision_time ? o.link_provision_time.split('T')[0] : 'N/A'}</strong>
+                          </div>
+                        )}
+                      </td>
                       <td>{contact.name}</td>
                       <td>
                         <div style={{ fontSize: '12px' }}>
@@ -408,8 +428,8 @@ export default function OrdersPage({ isHistory = false }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
-                <span className="label">Tên thư mục (Google Drive Folder)</span>
-                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Nhập tên thư mục lưu..." value={folderName} onChange={e => setFolderName(e.target.value)} />
+                <span className="label">Tên thư mục (Drive Folder)</span>
+                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f5f5f5', color: 'var(--muted)' }} placeholder="Nhập tên thư mục lưu..." value={folderName} disabled />
               </div>
               <div>
                 <span className="label">Trạng thái đơn hàng</span>
@@ -431,7 +451,7 @@ export default function OrdersPage({ isHistory = false }) {
               </div>
               <div>
                 <span className="label">Gói ảnh</span>
-                <select style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: '#fff' }} value={packageType} onChange={e => setPackageType(e.target.value)}>
+                <select style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f5f5f5', color: 'var(--muted)' }} value={packageType} disabled>
                   <option value="Trả phí">Trả phí</option>
                   <option value="Miễn phí">Miễn phí</option>
                 </select>
@@ -441,7 +461,7 @@ export default function OrdersPage({ isHistory = false }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px', alignItems: 'center' }}>
               <div>
                 <span className="label">Thời gian cấp link</span>
-                <input type="date" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid var(--line)' }} value={linkProvisionTime} onChange={e => setLinkProvisionTime(e.target.value)} />
+                <input type="date" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid var(--line)', background: '#f5f5f5', color: 'var(--muted)' }} value={linkProvisionTime} disabled />
               </div>
               <div style={{ fontSize: '13px' }}>
                 <span style={{ color: 'var(--muted)' }}>Ngày hết hạn:</span>
@@ -457,8 +477,8 @@ export default function OrdersPage({ isHistory = false }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
-                <span className="label">Link download (Google Drive)</span>
-                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Nhập link Google Drive..." value={driveLink} onChange={e => setDriveLink(e.target.value)} required />
+                <span className="label">Link download (Drive)</span>
+                <input style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }} placeholder="Nhập link Drive..." value={driveLink} onChange={e => setDriveLink(e.target.value)} required />
               </div>
               <div>
                 <span className="label">Mật khẩu Drive</span>
@@ -487,7 +507,9 @@ export default function OrdersPage({ isHistory = false }) {
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button type="button" className="btn ghost" style={{ color: 'var(--ink)' }} onClick={() => setSelectedOrder(null)}>Hủy</button>
-              <button type="submit" className="btn" style={{ background: 'var(--blue)', color: '#fff' }}>Xác nhận & Cập nhật</button>
+              <button type="submit" className="btn" style={{ background: 'var(--blue)', color: '#fff' }} disabled={updating}>
+                {updating ? 'Đang cập nhật...' : 'Xác nhận & Cập nhật'}
+              </button>
             </div>
           </form>
         </div>
