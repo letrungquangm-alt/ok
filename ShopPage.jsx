@@ -69,8 +69,8 @@ export default function ShopPage({ viewType = 'search' }) {
   const visibleOrders = activeTab === 'current' ? currentOrders : historyOrders;
 
   const [bankConfig, setBankConfig] = useState({
-    bankBrand: 'TCB',
-    accountNo: '3624081006',
+    bankBrand: 'ACB',
+    accountNo: '35749357',
     accountName: 'HOANG ANH KIET'
   });
 

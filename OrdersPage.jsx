@@ -29,8 +29,8 @@ export default function OrdersPage({ isHistory = false }) {
   const [paySuccess, setPaySuccess] = useState(false);
   const [showPayDetails, setShowPayDetails] = useState(false);
   const [bankConfig, setBankConfig] = useState({
-    bankBrand: 'TCB',
-    accountNo: '3624081006',
+    bankBrand: 'ACB',
+    accountNo: '35749357',
     accountName: 'HOANG ANH KIET'
   });
 

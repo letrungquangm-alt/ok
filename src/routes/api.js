@@ -353,8 +353,8 @@ router.get('/orders/:id/payment-status', async (req, res, next) => {
 
 router.get('/public-config', (req, res) => {
   res.json({
-    bankBrand: process.env.SEPAY_BANK_BRAND || 'TCB',
-    accountNo: process.env.SEPAY_ACCOUNT_NO || '3624081006',
+    bankBrand: process.env.SEPAY_BANK_BRAND || 'ACB',
+    accountNo: process.env.SEPAY_ACCOUNT_NO || '35749357',
     accountName: process.env.SEPAY_ACCOUNT_NAME || 'HOANG ANH KIET'
   });
 });
