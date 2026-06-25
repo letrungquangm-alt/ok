@@ -225,6 +225,7 @@ async function initDb() {
   `);
 
   const defaultSettings = [
+    { key: 'site_title', value: 'HoangKiet - Tra cứu thông tin gói ảnh' },
     { key: 'display_name', value: 'Kiet Hoang Photography' },
     { key: 'sub_heading', value: 'Chuyên chụp ảnh chân dung, phong cảnh, kỷ yếu' },
     { key: 'description', value: 'Chào mừng bạn đã đến với Website của Kiet Hoang Photography! Nơi lưu giữ những khung hình cảm xúc, chất lượng hình ảnh nghệ thuật đỉnh cao và chuyên nghiệp nhất.' },

@@ -270,6 +270,7 @@ const DEFAULT_EMAIL_FOOTER = 'Đây là email tự động gửi từ hệ thố
 export default function WebSettingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [siteTitle, setSiteTitle] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
   const [description, setDescription] = useState('');
@@ -365,6 +366,7 @@ export default function WebSettingsPage() {
       const res = await api.get('/web-settings');
       if (res.data) {
         const data = {
+          site_title: res.data.site_title || '',
           display_name: res.data.display_name || '',
           sub_heading: res.data.sub_heading || '',
           description: res.data.description || '',
@@ -377,6 +379,7 @@ export default function WebSettingsPage() {
           email_footer: res.data.email_footer || '',
           slides: res.data.slides || [],
         };
+        setSiteTitle(data.site_title);
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
@@ -486,6 +489,7 @@ export default function WebSettingsPage() {
     setErrorMsg('');
     try {
       const payload = {
+        site_title: siteTitle,
         display_name: displayName,
         sub_heading: subHeading,
         description,
@@ -501,6 +505,9 @@ export default function WebSettingsPage() {
       await api.put('/web-settings', payload);
       savedRef.current = payload;
       setIsDirty(false);
+      if (siteTitle) {
+        document.title = siteTitle;
+      }
       setSuccessMsg('Cập nhật cấu hình website thành công!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => setSuccessMsg(''), 5000);
@@ -516,6 +523,27 @@ export default function WebSettingsPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     await doSave();
+  };
+
+  const handleDiscardChanges = () => {
+    if (!window.confirm('Bạn có chắc chắn muốn huỷ bỏ toàn bộ các thay đổi chưa lưu?')) return;
+    const data = savedRef.current;
+    if (data) {
+      setSiteTitle(data.site_title || '');
+      setDisplayName(data.display_name || '');
+      setSubHeading(data.sub_heading || '');
+      setDescription(data.description || '');
+      setAnnouncement(data.announcement || '');
+      setPhone(data.phone || '');
+      setFacetime(data.facetime || '');
+      setEmailFromName(data.email_from_name || '');
+      setEmailSubject(data.email_subject || '');
+      setEmailBody(data.email_body || '');
+      setEmailFooter(data.email_footer || '');
+      setSlides(data.slides || []);
+      setIsDirty(false);
+      setCurrentPage(0);
+    }
   };
 
   // Modal: Save then navigate away
@@ -748,6 +776,12 @@ export default function WebSettingsPage() {
           {/* --- GENERAL CONFIGURATION --- */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>⚙️ Thông tin chung</h3>
+
+            <div>
+              <label htmlFor="ws-site-title" className="label">Tiêu đề Web (Hiển thị trên tab trình duyệt)</label>
+              <input id="ws-site-title" name="site_title" type="text" placeholder="Ví dụ: HoangKiet - Tra cứu thông tin gói ảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                value={siteTitle} onChange={e => { setSiteTitle(e.target.value); markDirty(); }} required />
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
@@ -1041,7 +1075,21 @@ export default function WebSettingsPage() {
 
           {/* --- ACTIONS --- */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: '20px', marginTop: '12px' }}>
-            <button type="submit" className="btn primary" disabled={saving || !isDirty} style={{ padding: '10px 24px', opacity: isDirty ? 1 : 0.5 }}>
+            <button 
+              type="button" 
+              className="btn secondary" 
+              disabled={saving || !isDirty} 
+              onClick={handleDiscardChanges}
+              style={{ padding: '10px 24px', opacity: isDirty ? 1 : 0.5 }}
+            >
+              Hủy thay đổi hiện tại
+            </button>
+            <button 
+              type="submit" 
+              className="btn primary" 
+              disabled={saving || !isDirty} 
+              style={{ padding: '10px 24px', opacity: isDirty ? 1 : 0.5 }}
+            >
               {saving ? 'Đang lưu...' : isDirty ? 'Lưu cấu hình website' : '✓ Đã lưu'}
             </button>
           </div>

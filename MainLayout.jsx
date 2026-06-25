@@ -59,6 +59,16 @@ export default function MainLayout() {
     };
   }, [location.pathname]);
 
+  useEffect(() => {
+    api.get('/web-settings')
+      .then(res => {
+        if (res.data && res.data.site_title) {
+          document.title = res.data.site_title;
+        }
+      })
+      .catch(err => console.error('Lỗi tải tiêu đề website:', err));
+  }, []);
+
   const getBottomNavLinkStyle = (path) => {
     let isActive = false;
     if (path === '/tracuugoianh' || path === '/tracuu') {
