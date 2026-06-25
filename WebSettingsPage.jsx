@@ -113,6 +113,8 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <input
             type="text"
+            name={`slide-title-${index}`}
+            aria-label="Tên nhóm ảnh"
             placeholder="Tên nhóm ảnh (Ví dụ: ẢNH CƯỚI)"
             style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '13px', fontWeight: 'bold' }}
             value={slide.title}
@@ -120,6 +122,8 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
             required
           />
           <textarea
+            name={`slide-desc-${index}`}
+            aria-label="Mô tả nhóm ảnh"
             placeholder="Mô tả ngắn gọn về nhóm ảnh..."
             style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '13px', minHeight: '36px', fontFamily: 'inherit', resize: 'none' }}
             value={slide.desc}
@@ -159,6 +163,8 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
         {mode === 'link' && (
           <input
             type="url"
+            name={`slide-image-${index}`}
+            aria-label="Link URL ảnh"
             placeholder="https://example.com/anh.jpg"
             style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '13px', fontFamily: 'monospace' }}
             value={slide.image && !slide.image.startsWith('data:') ? slide.image : ''}
@@ -381,39 +387,39 @@ export default function WebSettingsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <span className="label">Tên hiển thị Website</span>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <label htmlFor="ws-display-name" className="label">Tên hiển thị Website</label>
+                <input id="ws-display-name" name="display_name" type="text" placeholder="Ví dụ: Kiet Hoang Photography" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={displayName} onChange={e => { setDisplayName(e.target.value); markDirty(); }} required />
               </div>
               <div>
-                <span className="label">Tiêu đề phụ (Sub-heading)</span>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <label htmlFor="ws-sub-heading" className="label">Tiêu đề phụ (Sub-heading)</label>
+                <input id="ws-sub-heading" name="sub_heading" type="text" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={subHeading} onChange={e => { setSubHeading(e.target.value); markDirty(); }} required />
               </div>
             </div>
 
             <div>
-              <span className="label">Giới thiệu ngắn (Description)</span>
-              <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
+              <label htmlFor="ws-description" className="label">Giới thiệu ngắn (Description)</label>
+              <textarea id="ws-description" name="description" placeholder="Mô tả ngắn về studio/dịch vụ của bạn..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
                 value={description} onChange={e => { setDescription(e.target.value); markDirty(); }} required />
             </div>
 
             <div>
-              <span className="label">📢 Thông báo trang chủ</span>
-              <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
+              <label htmlFor="ws-announcement" className="label">📢 Thông báo trang chủ</label>
+              <textarea id="ws-announcement" name="announcement" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
                 placeholder="Nhập thông báo hiển thị tại trang chủ..."
                 value={announcement} onChange={e => { setAnnouncement(e.target.value); markDirty(); }} />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <span className="label">📞 Điện thoại / Zalo</span>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <label htmlFor="ws-phone" className="label">📞 Điện thoại / Zalo</label>
+                <input id="ws-phone" name="phone" type="tel" placeholder="Ví dụ: 0703.01.2959" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={phone} onChange={e => { setPhone(e.target.value); markDirty(); }} />
               </div>
               <div>
-                <span className="label">✉ FaceTime</span>
-                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <label htmlFor="ws-facetime" className="label">✉ FaceTime</label>
+                <input id="ws-facetime" name="facetime" type="text" placeholder="Ví dụ: 0703.01.2959 (Audio Only)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={facetime} onChange={e => { setFacetime(e.target.value); markDirty(); }} />
               </div>
             </div>
