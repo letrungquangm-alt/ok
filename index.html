@@ -26,6 +26,78 @@
       --gradient-primary: linear-gradient(135deg, #176b52 0%, #0f4d3b 100%);
     }
 
+    /* Light Mode CSS Variables and Overrides */
+    body.light-mode {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #cbd5e1;
+      --paper: #ffffff;
+      --bg: #f8fafc;
+      --green: #10b981;
+      --green-2: #047857;
+      --copper: #b66a2c;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --gold: #d97706;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.08);
+      --gradient-sidebar: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+
+    body.light-mode input, body.light-mode select, body.light-mode textarea {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.light-mode input:focus, body.light-mode select:focus, body.light-mode textarea:focus {
+      border-color: var(--copper) !important;
+      outline: 3px solid rgba(182, 106, 44, 0.15) !important;
+    }
+    body.light-mode th {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      border-bottom: 2px solid #cbd5e1 !important;
+    }
+    body.light-mode td {
+      border-bottom: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    body.light-mode tr:hover td {
+      background: #f1f5f9 !important;
+    }
+    body.light-mode .panel, body.light-mode .metric, body.light-mode .login-panel {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+    body.light-mode .topbar {
+      background: #ffffff !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+    body.light-mode .topbar .brand {
+      color: #0f172a !important;
+    }
+    body.light-mode .user {
+      color: #475569 !important;
+    }
+    body.light-mode .user:hover {
+      background: rgba(0, 0, 0, 0.05) !important;
+      color: #0f172a !important;
+    }
+    body.light-mode .avatar {
+      background: linear-gradient(135deg, #e2f1ea 0%, #cbd5e1 100%) !important;
+      color: #0f766e !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+    }
+    body.light-mode .btn.secondary, body.light-mode button.secondary {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    body.light-mode .btn.secondary:hover, body.light-mode button.secondary:hover {
+      background: rgba(0, 0, 0, 0.04) !important;
+    }
+
     /* Global Dark Mode Overrides */
     input, select, textarea {
       background: #181d1a !important;

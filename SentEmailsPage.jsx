@@ -211,21 +211,21 @@ export default function SentEmailsPage() {
       {/* --- MODAL XEM CHI TIẾT EMAIL --- */}
       {selectedEmail && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div className="panel page-transition" style={{ width: '100%', maxWidth: '720px', height: '85vh', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', background: '#121614', border: '1px solid #1c221e', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #1c221e', background: '#181d1a' }}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '720px', height: '85vh', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#ffffff' }}>Chi tiết email</h3>
-                <span style={{ fontSize: '12px', color: '#aaaaaa' }}>Thời gian: {new Date(selectedEmail.sent_at).toLocaleString('vi-VN')}</span>
+                <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--ink)' }}>Chi tiết email</h3>
+                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Thời gian: {new Date(selectedEmail.sent_at).toLocaleString('vi-VN')}</span>
               </div>
-              <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: '#aaaaaa' }} onClick={() => setSelectedEmail(null)}>✕</button>
+              <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: 'var(--muted)' }} onClick={() => setSelectedEmail(null)}>✕</button>
             </div>
             
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1c221e', background: '#121614', color: '#ffffff' }}>
-              <div style={{ marginBottom: '8px' }}><span style={{ color: '#aaaaaa', fontSize: '13px' }}>Tới:</span> <strong>{selectedEmail.to_email}</strong></div>
-              <div><span style={{ color: '#aaaaaa', fontSize: '13px' }}>Tiêu đề:</span> <strong>{selectedEmail.subject}</strong></div>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'var(--paper)', color: 'var(--ink)' }}>
+              <div style={{ marginBottom: '8px' }}><span style={{ color: 'var(--muted)', fontSize: '13px' }}>Tới:</span> <strong style={{ color: 'var(--ink)' }}>{selectedEmail.to_email}</strong></div>
+              <div><span style={{ color: 'var(--muted)', fontSize: '13px' }}>Tiêu đề:</span> <strong style={{ color: 'var(--ink)' }}>{selectedEmail.subject}</strong></div>
             </div>
 
-            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#090b0a' }}>
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: 'var(--bg)' }}>
               {selectedEmail.html_body ? (
                 <iframe 
                   title="Email Preview" 
@@ -238,18 +238,18 @@ export default function SentEmailsPage() {
                   whiteSpace: 'pre-wrap', 
                   fontFamily: 'monospace', 
                   fontSize: '13.5px', 
-                  background: '#181d1a', 
-                  color: '#ffffff',
+                  background: 'var(--paper)', 
+                  color: 'var(--ink)',
                   padding: '16px', 
                   borderRadius: '6px',
-                  border: '1px solid #1c221e'
+                  border: '1px solid var(--line)'
                 }}>
                   {selectedEmail.body}
                 </pre>
               )}
             </div>
 
-            <div style={{ padding: '16px 20px', borderTop: '1px solid #1c221e', textAlign: 'right', background: '#181d1a' }}>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--line)', textAlign: 'right', background: 'var(--bg)' }}>
               <button type="button" className="btn primary" style={{ minHeight: '36px' }} onClick={() => setSelectedEmail(null)}>Đóng</button>
             </div>
           </div>

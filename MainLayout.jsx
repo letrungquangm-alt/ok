@@ -140,6 +140,62 @@ export default function MainLayout() {
   const [showAdminConfirm, setShowAdminConfirm] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const renderThemeToggle = () => {
+    const isLight = theme === 'light';
+    return (
+      <button
+        onClick={toggleTheme}
+        type="button"
+        aria-label="Thay đổi giao diện sáng/tối"
+        title={isLight ? "Chuyển sang giao diện tối (Mặt trăng)" : "Chuyển sang giao diện sáng (Mặt tròn)"}
+        style={{
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          border: '1px solid var(--line)',
+          background: isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)',
+          color: 'var(--ink)',
+          cursor: 'pointer',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: '20px',
+          lineHeight: 1,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          outline: 'none',
+          padding: 0,
+          margin: '0 8px',
+          userSelect: 'none',
+          flexShrink: 0
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
+          e.currentTarget.style.transform = 'scale(1.08)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {isLight ? '○' : '☾'}
+      </button>
+    );
+  };
+
   const updateCartCount = () => {
     try {
       const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
@@ -652,6 +708,94 @@ export default function MainLayout() {
           border-left-color: var(--copper) !important;
         }
 
+        /* Light Mode overrides for Sidebar and Client Theme */
+        body.light-mode .sidebar-morph.sidebar-mode {
+          background: var(--gradient-sidebar);
+          color: #0f172a;
+          border-right: 1px solid var(--line);
+          box-shadow: 2px 0 12px rgba(0, 0, 0, 0.02);
+        }
+        body.light-mode .sidebar-morph.sidebar-mode .brand-text {
+          color: #0f172a !important;
+        }
+        body.light-mode .sidebar-morph.sidebar-mode .nav-title {
+          color: #64748b;
+        }
+        body.light-mode .sidebar-morph.sidebar-mode .nav-item {
+          color: #475569;
+        }
+        body.light-mode .sidebar-morph.sidebar-mode .nav-item.active {
+          background: rgba(0, 0, 0, 0.05);
+          color: #0f172a;
+        }
+        body.light-mode .sidebar-morph.sidebar-mode .nav-item:hover {
+          background: rgba(0, 0, 0, 0.03);
+          color: #0f172a;
+        }
+        body.light-mode .sidebar-morph.capsule-mode {
+          background: rgba(255, 255, 255, 0.85);
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+        body.light-mode .sidebar-morph.capsule-mode .nav-item {
+          color: #475569;
+        }
+        body.light-mode .sidebar-morph.capsule-mode .nav-item.active {
+          color: #ffffff !important;
+          background: #0f172a !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        }
+        body.light-mode .sidebar-morph.capsule-mode .nav-item.active .dot {
+          background: #ffffff !important;
+        }
+        body.light-mode .sidebar-morph.capsule-mode .nav-item:hover {
+          background: rgba(0, 0, 0, 0.04);
+          color: #0f172a;
+        }
+        body.light-mode .sidebar-morph .capsule-divider {
+          background: rgba(0, 0, 0, 0.1);
+        }
+        body.light-mode .client-theme {
+          --bg: #f8fafc;
+          --paper: #ffffff;
+          --ink: #0f172a;
+          --muted: #64748b;
+          --line: #cbd5e1;
+          --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.08);
+        }
+        body.light-mode .client-theme input, 
+        body.light-mode .client-theme select, 
+        body.light-mode .client-theme textarea {
+          background: #ffffff !important;
+          border: 1px solid #cbd5e1 !important;
+          color: #0f172a !important;
+        }
+        body.light-mode .client-theme th {
+          background: #f1f5f9 !important;
+          color: #475569 !important;
+          border-bottom: 2px solid #cbd5e1 !important;
+        }
+        body.light-mode .client-theme td {
+          border-bottom: 1px solid #cbd5e1 !important;
+          color: #0f172a !important;
+        }
+        body.light-mode .client-theme tr:hover td {
+          background: #f1f5f9 !important;
+        }
+        body.light-mode .client-theme .btn.ghost {
+          border-color: #cbd5e1 !important;
+          color: #475569 !important;
+          background: rgba(0,0,0,0.02) !important;
+        }
+        body.light-mode .client-theme .btn.ghost:hover {
+          background: rgba(0,0,0,0.05) !important;
+          border-color: #94a3b8 !important;
+        }
+        body.light-mode header .brand span {
+          color: #0f172a !important;
+        }
+
         /* Mobile responsive adjustments */
         @media (max-width: 980px) {
           .sidebar-morph {
@@ -874,39 +1018,45 @@ export default function MainLayout() {
                 fontWeight: '900',
                 fontSize: '18px'
               }}>📸</span>
-              <span style={{ color: '#fff' }}>HoangKiet</span>
+              <span style={{ color: 'var(--ink)' }}>HoangKiet</span>
             </div>
             
-            {user ? (
-              <div className="user" onClick={() => navigate('/profile')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', color: '#cbd5e1', padding: '6px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)' }} title="Tài khoản của tôi">
-                <span>{user.fullName}</span>
-                {user.avatar ? (
-                  <img src={user.avatar} alt="avatar" className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  <span className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 'bold' }}>{user.fullName?.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-            ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {renderThemeToggle()}
+              {user ? (
+                <div className="user" onClick={() => navigate('/profile')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', color: '#cbd5e1', padding: '6px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)' }} title="Tài khoản của tôi">
+                  <span>{user.fullName}</span>
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="avatar" className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span className="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'grid', placeItems: 'center', background: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 'bold' }}>{user.fullName?.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </header>
         ) : (
           /* Admin Topbar Header */
           <header className="topbar">
             <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>☰</button>
             <div></div>
-            {user ? (
-              <div className="user" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }} title="Tài khoản của tôi">
-                <span>{user.fullName}</span>
-                {user.avatar ? (
-                  <img src={user.avatar} alt="avatar" className="avatar" style={{ objectFit: 'cover' }} />
-                ) : (
-                  <span className="avatar">{user.fullName?.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-            ) : (
-              <div className="user" onClick={() => setShowAdminConfirm(true)} style={{ cursor: 'pointer' }} title="Đăng nhập Admin">
-                <span className="avatar" style={{ display: 'grid', placeItems: 'center' }}>🔑</span>
-              </div>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {renderThemeToggle()}
+              {user ? (
+                <div className="user" onClick={() => navigate('/profile')} style={{ cursor: 'pointer' }} title="Tài khoản của tôi">
+                  <span>{user.fullName}</span>
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="avatar" className="avatar" style={{ objectFit: 'cover' }} />
+                  ) : (
+                    <span className="avatar">{user.fullName?.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              ) : (
+                <div className="user" onClick={() => setShowAdminConfirm(true)} style={{ cursor: 'pointer' }} title="Đăng nhập Admin">
+                  <span className="avatar" style={{ display: 'grid', placeItems: 'center' }}>🔑</span>
+                </div>
+              )}
+            </div>
           </header>
         )}
 
