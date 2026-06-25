@@ -486,24 +486,30 @@ export default function WebSettingsPage() {
   };
 
   const renderFontInputs = (title, type, setType, name, setName, url, setUrl, isSynced, targetKey) => {
-    if (isSynced) {
-      return (
-        <div style={{ padding: '16px', border: '1px dashed var(--line)', borderRadius: '8px', background: 'rgba(255,255,255,0.01)', textAlign: 'center' }}>
-          <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'bold' }}>{title}</span>
-          <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: 'var(--green-2)' }}>
-            🔗 Đang tự động đồng bộ theo Font giao diện Website
-          </p>
-        </div>
-      );
-    }
-
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label className="label">{title}</label>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', opacity: isSynced ? 0.75 : 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <label className="label" style={{ margin: 0, fontWeight: 'bold' }}>{title}</label>
+          {isSynced && (
+            <span style={{ 
+              fontSize: '11px', 
+              color: '#10b981', 
+              background: 'rgba(16,185,129,0.1)', 
+              padding: '2px 8px', 
+              borderRadius: '4px', 
+              fontWeight: 'bold',
+              border: '1px solid rgba(16,185,129,0.2)'
+            }}>
+              🔗 Đang tự động đồng bộ theo Font giao diện
+            </span>
+          )}
+        </div>
+        
         <select 
-          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+          style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
           value={type}
           onChange={e => { setType(e.target.value); markDirty(); }}
+          disabled={isSynced}
         >
           <option value="preset">Chọn từ danh sách có sẵn (Google Fonts)</option>
           <option value="google">Nhập tên Google Font bất kỳ</option>
@@ -513,9 +519,10 @@ export default function WebSettingsPage() {
 
         {type === 'preset' && (
           <select 
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
             value={name}
             onChange={e => { setName(e.target.value); markDirty(); }}
+            disabled={isSynced}
           >
             <option value="Be Vietnam Pro">Be Vietnam Pro (Mặc định)</option>
             <option value="Inter">Inter (Hiện đại)</option>
@@ -534,10 +541,11 @@ export default function WebSettingsPage() {
           <input 
             type="text" 
             placeholder="Ví dụ: Oswald hoặc Open Sans" 
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
             value={name}
             onChange={e => { setName(e.target.value); markDirty(); }}
             required
+            disabled={isSynced}
           />
         )}
 
@@ -546,10 +554,11 @@ export default function WebSettingsPage() {
             <input 
               type="text" 
               placeholder="Đặt tên Font (Ví dụ: CustomFont)" 
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
               value={name}
               onChange={e => { setName(e.target.value); markDirty(); }}
               required
+              disabled={isSynced}
             />
             <label style={{
               display: 'flex',
@@ -558,7 +567,7 @@ export default function WebSettingsPage() {
               padding: '10px',
               border: '1px dashed var(--line)',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: isSynced ? 'not-allowed' : 'pointer',
               fontSize: '13px',
               color: 'var(--muted)',
               background: 'rgba(255,255,255,0.02)',
@@ -570,6 +579,7 @@ export default function WebSettingsPage() {
                 accept=".woff2,.woff,.ttf,.otf" 
                 style={{ display: 'none' }} 
                 onChange={(e) => handleFontUpload(e, targetKey)} 
+                disabled={isSynced}
               />
             </label>
           </div>
@@ -580,18 +590,20 @@ export default function WebSettingsPage() {
             <input 
               type="text" 
               placeholder="Tên Font-Family (Ví dụ: CustomFont)" 
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
               value={name}
               onChange={e => { setName(e.target.value); markDirty(); }}
               required
+              disabled={isSynced}
             />
             <input 
               type="url" 
               placeholder="Link file CSS (Ví dụ: https://example.com/font.css)" 
-              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+              style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', background: isSynced ? 'rgba(255,255,255,0.02)' : 'var(--paper)', color: isSynced ? 'var(--muted)' : 'var(--ink)', cursor: isSynced ? 'not-allowed' : 'default' }}
               value={url}
               onChange={e => { setUrl(e.target.value); markDirty(); }}
               required
+              disabled={isSynced}
             />
           </div>
         )}
@@ -1419,7 +1431,7 @@ export default function WebSettingsPage() {
               </div>
 
               {/* Conditional Panels */}
-              {(fontEditMode === 'brand' || fontEditMode === 'all') && (
+              {(fontEditMode === 'brand' || fontEditMode === 'all' || fontEditMode === 'sync') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Logo / Thương hiệu (Sidebar)',
@@ -1431,7 +1443,7 @@ export default function WebSettingsPage() {
                 </div>
               )}
 
-              {(fontEditMode === 'subheading' || fontEditMode === 'all') && (
+              {(fontEditMode === 'subheading' || fontEditMode === 'all' || fontEditMode === 'sync') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Tiêu đề phụ (Sub-heading)',
@@ -1443,7 +1455,7 @@ export default function WebSettingsPage() {
                 </div>
               )}
 
-              {(fontEditMode === 'description' || fontEditMode === 'all') && (
+              {(fontEditMode === 'description' || fontEditMode === 'all' || fontEditMode === 'sync') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Giới thiệu ngắn (Description)',
