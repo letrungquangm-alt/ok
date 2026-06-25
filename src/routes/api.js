@@ -28,17 +28,20 @@ async function getEmailContent(lookup, order, newDriveLink, newDrivePassword, ne
   const bodyRes = await query("SELECT value FROM web_settings WHERE key = 'email_body'");
 
   let subjectTpl = (subjectRes.rows.length > 0) ? subjectRes.rows[0].value : '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}';
-  let bodyTpl = (bodyRes.rows.length > 0) ? bodyRes.rows[0].value : `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">
-  <p>Xin chào <strong>{full_name}</strong> với mã tra cứu <strong>{lookup_code}</strong>,</p>
-  <p>Chúng tôi đã nhận được thông tin <strong>{payment_status}</strong> của bạn và đơn hàng <strong>{order_no}</strong> đã hoàn thành!</p>
-  {preview_image}
-  <p>Dưới đây là toàn bộ gói ảnh của bạn!</p>
-  <p><strong>Link Drive tải ảnh:</strong> <a href="{drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>
-  <p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">{drive_password}</code></p>
-  <br/>
-  <p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>
-  <p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>
-</div>`;
+  let bodyTpl = (bodyRes.rows.length > 0) ? bodyRes.rows[0].value : `Xin chào {full_name} với mã tra cứu {lookup_code},
+
+Chúng tôi đã nhận được thông tin {payment_status} của bạn và đơn hàng {order_no} đã hoàn thành!
+
+{preview_image}
+
+Dưới đây là toàn bộ gói ảnh của bạn:
+Link Drive tải ảnh: {drive_link}
+Mật khẩu: {drive_password}
+
+Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!
+
+Trân trọng,
+Ban quản trị HoangKiet`;
 
   // Process subject
   const subject = subjectTpl
@@ -46,7 +49,7 @@ async function getEmailContent(lookup, order, newDriveLink, newDrivePassword, ne
     .replace(/{full_name}/g, lookup.full_name)
     .replace(/{lookup_code}/g, lookup.code);
 
-  // Process preview image and attachments
+  // Process preview image
   const attachments = [];
   let previewHtml = '';
 
@@ -66,23 +69,65 @@ async function getEmailContent(lookup, order, newDriveLink, newDrivePassword, ne
         cid: cidName
       });
       
-      previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
-        `<div style="margin: 20px 0;"><img src="cid:${cidName}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+      previewHtml = `<div style="margin: 20px 0;"><h3 style="font-size: 15px; margin: 0 0 10px 0; color: #333;">Ảnh xem trước của bạn:</h3><img src="cid:${cidName}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
     } else {
-      previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
-        `<div style="margin: 20px 0;"><img src="${activePreviewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+      previewHtml = `<div style="margin: 20px 0;"><h3 style="font-size: 15px; margin: 0 0 10px 0; color: #333;">Ảnh xem trước của bạn:</h3><img src="${activePreviewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
     }
   }
 
-  // Replace placeholders in body
-  let html = bodyTpl
-    .replace(/{order_no}/g, orderNoText)
-    .replace(/{full_name}/g, lookup.full_name)
-    .replace(/{lookup_code}/g, lookup.code)
-    .replace(/{payment_status}/g, paymentStatus)
-    .replace(/{drive_link}/g, driveLink)
-    .replace(/{drive_password}/g, drivePassword)
-    .replace(/{preview_image}/g, previewHtml);
+  // Format links & password replacements
+  const driveLinkHtml = driveLink 
+    ? `<a href="${driveLink}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a>`
+    : 'Chưa cung cấp';
+  const drivePasswordHtml = `<code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${drivePassword}</code>`;
+
+  // Parse paragraphs from plain text template
+  const paragraphs = bodyTpl
+    .split(/\r?\n/)
+    .map(p => p.trim());
+
+  let contentHtml = '';
+  paragraphs.forEach(p => {
+    if (p.length === 0) {
+      // Empty line -> add vertical spacing
+      contentHtml += `<div style="height: 10px;"></div>`;
+      return;
+    }
+
+    // Replace place holders in this paragraph
+    let pContent = p
+      .replace(/{order_no}/g, `<strong>${orderNoText}</strong>`)
+      .replace(/{full_name}/g, `<strong>${lookup.full_name}</strong>`)
+      .replace(/{lookup_code}/g, `<strong>${lookup.code}</strong>`)
+      .replace(/{payment_status}/g, `<strong>${paymentStatus}</strong>`)
+      .replace(/{drive_link}/g, driveLinkHtml)
+      .replace(/{drive_password}/g, drivePasswordHtml);
+
+    if (p.includes('{preview_image}')) {
+      contentHtml += pContent.replace(/{preview_image}/g, previewHtml);
+    } else {
+      // Regular paragraph
+      contentHtml += `<p style="margin: 0 0 8px 0; font-size: 15px;">${pContent}</p>`;
+    }
+  });
+
+  // If {preview_image} was not placed but exists, let's append it right after the content
+  if (!bodyTpl.includes('{preview_image}') && previewHtml !== '') {
+    contentHtml += previewHtml;
+  }
+
+  // Wrap in beautiful HTML structure
+  const html = `<div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+  <div style="border-bottom: 2px solid #10b981; padding-bottom: 12px; margin-bottom: 20px;">
+    <h2 style="margin: 0; color: #0f4d3b; font-size: 18px; text-transform: uppercase; letter-spacing: 0.5px;">Cập nhật trạng thái đơn hàng</h2>
+  </div>
+  <div style="font-size: 15px; color: #334155;">
+    ${contentHtml}
+  </div>
+  <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
+    Đây là email tự động gửi từ hệ thống <strong>HoangKiet Photography</strong>.<br/>Vui lòng không trả lời trực tiếp email này.
+  </div>
+</div>`;
 
   // Fallback text email
   const text = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +

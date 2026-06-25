@@ -444,10 +444,11 @@ export default function WebSettingsPage() {
 
           {/* --- EMAIL CONFIGURATION --- */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-            <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>✉️ Nội dung Email hoàn thành đơn</h3>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.45' }}>
-              Cấu hình tiêu đề và nội dung HTML của thư điện tử gửi tự động tới khách hàng khi duyệt đơn thành công.
-              Các từ khóa động hỗ trợ thay thế:
+            <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>✉️ Cấu hình Email gửi khách hàng</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5' }}>
+              Hãy nhập nội dung thư bằng chữ thường (Text). Hệ thống sẽ <strong>tự động tối ưu hóa giao diện</strong>, bọc email trong khung chuyên nghiệp, căn chỉnh phông chữ, định dạng link tải ảnh đẹp mắt, và tự động xử lý gửi kèm ảnh xem trước cho khách hàng.
+              <br /><br />
+              <strong>Các từ khóa thay thế tự động (hãy đặt trong thư của bạn):</strong>
               <br />
               <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{order_no}'}</code> (Mã đơn)
               <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{full_name}'}</code> (Tên khách)
@@ -456,18 +457,18 @@ export default function WebSettingsPage() {
               <br />
               <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_link}'}</code> (Link tải Drive)
               <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_password}'}</code> (Mật khẩu Drive)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>{'{preview_image}'}</code> (Ảnh xem trước - tự động ẩn nếu không tải lên)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>{'{preview_image}'}</code> (Nơi hiển thị ảnh xem trước - tự động ẩn nếu không tải lên)
             </p>
-
+ 
             <div>
               <label htmlFor="ws-email-subject" className="label">Tiêu đề Email</label>
               <input id="ws-email-subject" name="email_subject" type="text" placeholder="Ví dụ: [HoangKiet] Cập nhật thông tin đơn hàng {order_no}" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                 value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }} required />
             </div>
-
+ 
             <div>
-              <label htmlFor="ws-email-body" className="label">Nội dung Email (HTML)</label>
-              <textarea id="ws-email-body" name="email_body" placeholder="Nhập mã HTML..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.5' }}
+              <label htmlFor="ws-email-body" className="label">Nội dung thư (Chữ thường)</label>
+              <textarea id="ws-email-body" name="email_body" placeholder="Nhập nội dung thư gửi khách..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
                 value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }} required />
             </div>
           </section>
