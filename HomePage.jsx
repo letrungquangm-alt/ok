@@ -421,12 +421,12 @@ export default function HomePage() {
             }}>
               {displayName}
             </h1>
-            <p style={{ margin: 0, fontSize: isMobile ? '15px' : '18px', color: 'var(--copper)', fontWeight: '600' }}>
+            <p className="custom-subheading-font" style={{ margin: 0, fontSize: isMobile ? '15px' : '18px', color: 'var(--copper)', fontWeight: '600' }}>
               {subHeading}
             </p>
           </div>
 
-          <p style={{ margin: 0, fontSize: '15px', color: '#cbd5e1', lineHeight: '1.6' }}>
+          <p className="custom-desc-font" style={{ margin: 0, fontSize: '15px', color: '#cbd5e1', lineHeight: '1.6' }}>
             {description}
           </p>
 

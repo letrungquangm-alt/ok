@@ -523,7 +523,7 @@ export default function ShopPage({ viewType = 'search' }) {
                 {isEmailDuplicate && (
                   <div style={{ 
                     background: '#fce8e8', 
-                    color: 'var(--ink)', 
+                    color: '#000000', 
                     padding: '12px 14px', 
                     borderRadius: '8px', 
                     fontSize: '13.5px', 
@@ -611,11 +611,11 @@ export default function ShopPage({ viewType = 'search' }) {
             {recoveredCode ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <span style={{ fontSize: '48px' }}>🔑</span>
-                <h4 style={{ margin: '12px 0 6px 0', color: 'var(--green-2)' }}>Mã tra cứu của bạn là:</h4>
-                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: '#f4f6f1', border: '1px dashed var(--line)', padding: '16px', borderRadius: '8px', color: 'var(--ink)', display: 'inline-block', minWidth: '200px', margin: '12px 0' }}>
+                <h4 style={{ margin: '12px 0 6px 0', color: '#000000' }}>Mã tra cứu của bạn là:</h4>
+                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: '#f4f6f1', border: '1px dashed var(--line)', padding: '16px', borderRadius: '8px', color: '#000000', display: 'inline-block', minWidth: '200px', margin: '12px 0' }}>
                   {recoveredCode}
                 </div>
-                <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Hãy lưu lại mã này hoặc nhập ngay để tra cứu.</p>
+                <p style={{ color: '#000000', fontSize: '13px' }}>Hãy lưu lại mã này hoặc nhập ngay để tra cứu.</p>
                 <button type="button" className="btn primary" style={{ width: '100%', marginTop: '24px' }} onClick={resetAllModals}>OK</button>
               </div>
             ) : forgotStep === 1 ? (

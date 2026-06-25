@@ -73,7 +73,7 @@ function loadFont(fontType, fontName, fontUrl) {
   }
 }
 
-function updateCustomFontsCSS(brandFontName, siteFontName) {
+function updateCustomFontsCSS(brandFontName, siteFontName, subheadingFontName, descFontName) {
   let styleTag = document.getElementById('custom-fonts-css');
   if (!styleTag) {
     styleTag = document.createElement('style');
@@ -83,6 +83,8 @@ function updateCustomFontsCSS(brandFontName, siteFontName) {
 
   const brandFamily = brandFontName ? `'${brandFontName.replace(/'/g, "\\'")}'` : 'inherit';
   const siteFamily = siteFontName ? `'${siteFontName.replace(/'/g, "\\'")}'` : 'inherit';
+  const subheadingFamily = subheadingFontName ? `'${subheadingFontName.replace(/'/g, "\\'")}'` : 'inherit';
+  const descFamily = descFontName ? `'${descFontName.replace(/'/g, "\\'")}'` : 'inherit';
 
   styleTag.innerHTML = `
     body, input, select, textarea, button {
@@ -90,6 +92,12 @@ function updateCustomFontsCSS(brandFontName, siteFontName) {
     }
     .sidebar-morph .brand .brand-text {
       font-family: ${brandFamily}, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+    .custom-subheading-font {
+      font-family: ${subheadingFamily}, inherit !important;
+    }
+    .custom-desc-font {
+      font-family: ${descFamily}, inherit !important;
     }
   `;
 }
@@ -190,8 +198,20 @@ export default function MainLayout() {
           const sUrl = res.data.site_font_url || '';
           loadFont(sType, sName, sUrl);
 
+          // Load & apply subheading font
+          const subType = res.data.subheading_font_type || 'preset';
+          const subName = res.data.subheading_font_name || 'Be Vietnam Pro';
+          const subUrl = res.data.subheading_font_url || '';
+          loadFont(subType, subName, subUrl);
+
+          // Load & apply description font
+          const descType = res.data.desc_font_type || 'preset';
+          const descName = res.data.desc_font_name || 'Be Vietnam Pro';
+          const descUrl = res.data.desc_font_url || '';
+          loadFont(descType, descName, descUrl);
+
           // Apply CSS
-          updateCustomFontsCSS(bName, sName);
+          updateCustomFontsCSS(bName, sName, subName, descName);
         }
       })
       .catch(err => console.error('Lỗi tải cấu hình website:', err));
