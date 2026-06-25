@@ -77,6 +77,76 @@ function updateFavicon(url) {
   link.href = url;
 }
 
+// Helper to dynamically load font from Google Fonts or a custom URL stylesheet
+function loadFont(fontType, fontName, fontUrl) {
+  if (!fontName) return;
+  const nameTrim = fontName.trim();
+  if (fontType === 'custom_url' && fontUrl) {
+    const urlTrim = fontUrl.trim();
+    let link = document.querySelector(`link[href="${urlTrim}"]`);
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = urlTrim;
+      document.head.appendChild(link);
+    }
+  } else if (fontType === 'google') {
+    const fontId = `gfont-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
+    let link = document.getElementById(fontId);
+    if (!link) {
+      link = document.createElement('link');
+      link.id = fontId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(nameTrim)}:wght@300;400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    }
+  } else if (fontType === 'preset') {
+    const presets = {
+      'Inter': 'Inter:wght@300;400;500;600;700;800;900',
+      'Outfit': 'Outfit:wght@300;400;500;600;700;800;900',
+      'Roboto': 'Roboto:wght@300;400;500;700;900',
+      'Montserrat': 'Montserrat:wght@300;400;500;600;700;800;900',
+      'Playfair Display': 'Playfair+Display:ital,wght@0,400..900;1,400..900',
+      'Lora': 'Lora:ital,wght@0,400..700;1,400..700',
+      'Dancing Script': 'Dancing+Script:wght@400..700',
+      'Cinzel': 'Cinzel:wght@400..900',
+      'Pacifico': 'Pacifico',
+    };
+    if (presets[nameTrim]) {
+      const fontId = `gfont-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
+      let link = document.getElementById(fontId);
+      if (!link) {
+        link = document.createElement('link');
+        link.id = fontId;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${presets[nameTrim]}&display=swap`;
+        document.head.appendChild(link);
+      }
+    }
+  }
+}
+
+function updateCustomFontsCSS(brandFontName, siteFontName) {
+  let styleTag = document.getElementById('custom-fonts-css');
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = 'custom-fonts-css';
+    document.head.appendChild(styleTag);
+  }
+
+  const brandFamily = brandFontName ? `'${brandFontName.replace(/'/g, "\\'")}'` : 'inherit';
+  const siteFamily = siteFontName ? `'${siteFontName.replace(/'/g, "\\'")}'` : 'inherit';
+
+  styleTag.innerHTML = `
+    body, input, select, textarea, button {
+      font-family: ${siteFamily}, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+    .sidebar-morph .brand .brand-text {
+      font-family: ${brandFamily}, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+  `;
+}
+
 // ─── UnsavedModal component ──────────────────────────────────────────────────
 function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
   return (
@@ -293,6 +363,13 @@ export default function WebSettingsPage() {
   const [uploadedLogo, setUploadedLogo] = useState('');
   const [linkLogo, setLinkLogo] = useState('');
   const [logoMode, setLogoMode] = useState('link');
+  const [brandName, setBrandName] = useState('HoangKiet');
+  const [brandFontType, setBrandFontType] = useState('preset');
+  const [brandFontName, setBrandFontName] = useState('Be Vietnam Pro');
+  const [brandFontUrl, setBrandFontUrl] = useState('');
+  const [siteFontType, setSiteFontType] = useState('preset');
+  const [siteFontName, setSiteFontName] = useState('Be Vietnam Pro');
+  const [siteFontUrl, setSiteFontUrl] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
   const [description, setDescription] = useState('');
@@ -383,6 +460,13 @@ export default function WebSettingsPage() {
     }, 0);
   };
 
+  // Live font preview
+  useEffect(() => {
+    loadFont(brandFontType, brandFontName, brandFontUrl);
+    loadFont(siteFontType, siteFontName, siteFontUrl);
+    updateCustomFontsCSS(brandFontName, siteFontName);
+  }, [brandFontType, brandFontName, brandFontUrl, siteFontType, siteFontName, siteFontUrl]);
+
   const fetchSettings = async () => {
     try {
       const res = await api.get('/web-settings');
@@ -390,6 +474,13 @@ export default function WebSettingsPage() {
         const data = {
           site_title: res.data.site_title || '',
           site_logo: res.data.site_logo || '',
+          brand_name: res.data.brand_name || 'HoangKiet',
+          brand_font_type: res.data.brand_font_type || 'preset',
+          brand_font_name: res.data.brand_font_name || 'Be Vietnam Pro',
+          brand_font_url: res.data.brand_font_url || '',
+          site_font_type: res.data.site_font_type || 'preset',
+          site_font_name: res.data.site_font_name || 'Be Vietnam Pro',
+          site_font_url: res.data.site_font_url || '',
           display_name: res.data.display_name || '',
           sub_heading: res.data.sub_heading || '',
           description: res.data.description || '',
@@ -408,6 +499,13 @@ export default function WebSettingsPage() {
         setUploadedLogo(isLogoB64 ? data.site_logo : '');
         setLinkLogo(!isLogoB64 ? data.site_logo : '');
         setLogoMode(isLogoB64 ? 'upload' : 'link');
+        setBrandName(data.brand_name);
+        setBrandFontType(data.brand_font_type);
+        setBrandFontName(data.brand_font_name);
+        setBrandFontUrl(data.brand_font_url);
+        setSiteFontType(data.site_font_type);
+        setSiteFontName(data.site_font_name);
+        setSiteFontUrl(data.site_font_url);
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
@@ -538,6 +636,13 @@ export default function WebSettingsPage() {
       const payload = {
         site_title: siteTitle,
         site_logo: siteLogo,
+        brand_name: brandName,
+        brand_font_type: brandFontType,
+        brand_font_name: brandFontName,
+        brand_font_url: brandFontUrl,
+        site_font_type: siteFontType,
+        site_font_name: siteFontName,
+        site_font_url: siteFontUrl,
         display_name: displayName,
         sub_heading: subHeading,
         description,
@@ -589,6 +694,13 @@ export default function WebSettingsPage() {
       setUploadedLogo(isLogoB64 ? data.site_logo : '');
       setLinkLogo(!isLogoB64 ? data.site_logo : '');
       setLogoMode(isLogoB64 ? 'upload' : 'link');
+      setBrandName(data.brand_name || 'HoangKiet');
+      setBrandFontType(data.brand_font_type || 'preset');
+      setBrandFontName(data.brand_font_name || 'Be Vietnam Pro');
+      setBrandFontUrl(data.brand_font_url || '');
+      setSiteFontType(data.site_font_type || 'preset');
+      setSiteFontName(data.site_font_name || 'Be Vietnam Pro');
+      setSiteFontUrl(data.site_font_url || '');
       setDisplayName(data.display_name || '');
       setSubHeading(data.sub_heading || '');
       setDescription(data.description || '');
@@ -974,15 +1086,156 @@ export default function WebSettingsPage() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
+                <label htmlFor="ws-brand-name" className="label">Tên thương hiệu (Sidebar)</label>
+                <input id="ws-brand-name" name="brand_name" type="text" placeholder="Ví dụ: HoangKiet" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={brandName} onChange={e => { setBrandName(e.target.value); markDirty(); }} required />
+              </div>
+
+              <div>
                 <label htmlFor="ws-display-name" className="label">Tên hiển thị Website</label>
                 <input id="ws-display-name" name="display_name" type="text" autoComplete="organization" placeholder="Ví dụ: Kiet Hoang Photography" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={displayName} onChange={e => { setDisplayName(e.target.value); markDirty(); }} required />
               </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <label htmlFor="ws-sub-heading" className="label">Tiêu đề phụ (Sub-heading)</label>
-                <input id="ws-sub-heading" name="sub_heading" type="text" autoComplete="off" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                  value={subHeading} onChange={e => { setSubHeading(e.target.value); markDirty(); }} required />
+                <label className="label">Font chữ thương hiệu (Sidebar)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <select 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                    value={brandFontType}
+                    onChange={e => { setBrandFontType(e.target.value); markDirty(); }}
+                  >
+                    <option value="preset">Chọn từ danh sách có sẵn (Google Fonts)</option>
+                    <option value="google">Nhập tên Google Font bất kỳ</option>
+                    <option value="custom_url">Nhập link file Font CSS tùy chỉnh</option>
+                  </select>
+
+                  {brandFontType === 'preset' && (
+                    <select 
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                      value={brandFontName}
+                      onChange={e => { setBrandFontName(e.target.value); markDirty(); }}
+                    >
+                      <option value="Be Vietnam Pro">Be Vietnam Pro (Mặc định)</option>
+                      <option value="Inter">Inter (Hiện đại)</option>
+                      <option value="Outfit">Outfit (Bo tròn trẻ trung)</option>
+                      <option value="Roboto">Roboto (Truyền thống)</option>
+                      <option value="Montserrat">Montserrat (Mạnh mẽ)</option>
+                      <option value="Playfair Display">Playfair Display (Sang trọng)</option>
+                      <option value="Lora">Lora (Cổ điển)</option>
+                      <option value="Dancing Script">Dancing Script (Nghệ thuật bay bổng)</option>
+                      <option value="Cinzel">Cinzel (Cực kỳ cao cấp)</option>
+                      <option value="Pacifico">Pacifico (Phá cách)</option>
+                    </select>
+                  )}
+
+                  {brandFontType === 'google' && (
+                    <input 
+                      type="text" 
+                      placeholder="Ví dụ: Oswald hoặc Open Sans" 
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                      value={brandFontName}
+                      onChange={e => { setBrandFontName(e.target.value); markDirty(); }}
+                      required
+                    />
+                  )}
+
+                  {brandFontType === 'custom_url' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Tên Font-Family (Ví dụ: MyCustomFont)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={brandFontName}
+                        onChange={e => { setBrandFontName(e.target.value); markDirty(); }}
+                        required
+                      />
+                      <input 
+                        type="url" 
+                        placeholder="Link file CSS (Ví dụ: https://example.com/font.css)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={brandFontUrl}
+                        onChange={e => { setBrandFontUrl(e.target.value); markDirty(); }}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+
+              <div>
+                <label className="label">Font chữ giao diện Website</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <select 
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                    value={siteFontType}
+                    onChange={e => { setSiteFontType(e.target.value); markDirty(); }}
+                  >
+                    <option value="preset">Chọn từ danh sách có sẵn (Google Fonts)</option>
+                    <option value="google">Nhập tên Google Font bất kỳ</option>
+                    <option value="custom_url">Nhập link file Font CSS tùy chỉnh</option>
+                  </select>
+
+                  {siteFontType === 'preset' && (
+                    <select 
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                      value={siteFontName}
+                      onChange={e => { setSiteFontName(e.target.value); markDirty(); }}
+                    >
+                      <option value="Be Vietnam Pro">Be Vietnam Pro (Mặc định)</option>
+                      <option value="Inter">Inter (Hiện đại)</option>
+                      <option value="Outfit">Outfit (Bo tròn trẻ trung)</option>
+                      <option value="Roboto">Roboto (Truyền thống)</option>
+                      <option value="Montserrat">Montserrat (Mạnh mẽ)</option>
+                      <option value="Playfair Display">Playfair Display (Sang trọng)</option>
+                      <option value="Lora">Lora (Cổ điển)</option>
+                      <option value="Dancing Script">Dancing Script (Nghệ thuật bay bổng)</option>
+                      <option value="Cinzel">Cinzel (Cực kỳ cao cấp)</option>
+                      <option value="Pacifico">Pacifico (Phá cách)</option>
+                    </select>
+                  )}
+
+                  {siteFontType === 'google' && (
+                    <input 
+                      type="text" 
+                      placeholder="Ví dụ: Oswald hoặc Open Sans" 
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                      value={siteFontName}
+                      onChange={e => { setSiteFontName(e.target.value); markDirty(); }}
+                      required
+                    />
+                  )}
+
+                  {siteFontType === 'custom_url' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Tên Font-Family (Ví dụ: MyCustomFont)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={siteFontName}
+                        onChange={e => { setSiteFontName(e.target.value); markDirty(); }}
+                        required
+                      />
+                      <input 
+                        type="url" 
+                        placeholder="Link file CSS (Ví dụ: https://example.com/font.css)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={siteFontUrl}
+                        onChange={e => { setSiteFontUrl(e.target.value); markDirty(); }}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="ws-sub-heading" className="label">Tiêu đề phụ (Sub-heading)</label>
+              <input id="ws-sub-heading" name="sub_heading" type="text" autoComplete="off" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                value={subHeading} onChange={e => { setSubHeading(e.target.value); markDirty(); }} required />
             </div>
 
             <div>

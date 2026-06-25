@@ -3,6 +3,76 @@ import { Outlet, Navigate, Link, useNavigate, useLocation } from 'react-router-d
 import api from './api';
 import { createPortal } from 'react-dom';
 
+// Helper to dynamically load font from Google Fonts or a custom URL stylesheet
+function loadFont(fontType, fontName, fontUrl) {
+  if (!fontName) return;
+  const nameTrim = fontName.trim();
+  if (fontType === 'custom_url' && fontUrl) {
+    const urlTrim = fontUrl.trim();
+    let link = document.querySelector(`link[href="${urlTrim}"]`);
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = urlTrim;
+      document.head.appendChild(link);
+    }
+  } else if (fontType === 'google') {
+    const fontId = `gfont-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
+    let link = document.getElementById(fontId);
+    if (!link) {
+      link = document.createElement('link');
+      link.id = fontId;
+      link.rel = 'stylesheet';
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(nameTrim)}:wght@300;400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    }
+  } else if (fontType === 'preset') {
+    const presets = {
+      'Inter': 'Inter:wght@300;400;500;600;700;800;900',
+      'Outfit': 'Outfit:wght@300;400;500;600;700;800;900',
+      'Roboto': 'Roboto:wght@300;400;500;700;900',
+      'Montserrat': 'Montserrat:wght@300;400;500;600;700;800;900',
+      'Playfair Display': 'Playfair+Display:ital,wght@0,400..900;1,400..900',
+      'Lora': 'Lora:ital,wght@0,400..700;1,400..700',
+      'Dancing Script': 'Dancing+Script:wght@400..700',
+      'Cinzel': 'Cinzel:wght@400..900',
+      'Pacifico': 'Pacifico',
+    };
+    if (presets[nameTrim]) {
+      const fontId = `gfont-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
+      let link = document.getElementById(fontId);
+      if (!link) {
+        link = document.createElement('link');
+        link.id = fontId;
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${presets[nameTrim]}&display=swap`;
+        document.head.appendChild(link);
+      }
+    }
+  }
+}
+
+function updateCustomFontsCSS(brandFontName, siteFontName) {
+  let styleTag = document.getElementById('custom-fonts-css');
+  if (!styleTag) {
+    styleTag = document.createElement('style');
+    styleTag.id = 'custom-fonts-css';
+    document.head.appendChild(styleTag);
+  }
+
+  const brandFamily = brandFontName ? `'${brandFontName.replace(/'/g, "\\'")}'` : 'inherit';
+  const siteFamily = siteFontName ? `'${siteFontName.replace(/'/g, "\\'")}'` : 'inherit';
+
+  styleTag.innerHTML = `
+    body, input, select, textarea, button {
+      font-family: ${siteFamily}, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+    .sidebar-morph .brand .brand-text {
+      font-family: ${brandFamily}, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+  `;
+}
+
 export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,6 +89,7 @@ export default function MainLayout() {
   const [hasClickedPendingPayment, setHasClickedPendingPayment] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [siteLogo, setSiteLogo] = useState('');
+  const [brandName, setBrandName] = useState('HoangKiet');
 
   const [renderIsClientPage, setRenderIsClientPage] = useState(isClientPage);
   const [contentOpacity, setContentOpacity] = useState(1);
@@ -82,6 +153,24 @@ export default function MainLayout() {
             setSiteLogo(res.data.site_logo);
             updateFavicon(res.data.site_logo);
           }
+          if (res.data.brand_name) {
+            setBrandName(res.data.brand_name);
+          }
+
+          // Load & apply brand font
+          const bType = res.data.brand_font_type || 'preset';
+          const bName = res.data.brand_font_name || 'Be Vietnam Pro';
+          const bUrl = res.data.brand_font_url || '';
+          loadFont(bType, bName, bUrl);
+
+          // Load & apply site font
+          const sType = res.data.site_font_type || 'preset';
+          const sName = res.data.site_font_name || 'Be Vietnam Pro';
+          const sUrl = res.data.site_font_url || '';
+          loadFont(sType, sName, sUrl);
+
+          // Apply CSS
+          updateCustomFontsCSS(bName, sName);
         }
       })
       .catch(err => console.error('Lỗi tải cấu hình website:', err));
@@ -599,7 +688,7 @@ export default function MainLayout() {
           ) : (
             <span className="brand-mark">📸</span>
           )}
-          <span className="brand-text">HoangKiet</span>
+          <span className="brand-text">{brandName || 'HoangKiet'}</span>
         </div>
         
         <div className="nav nav-section">
