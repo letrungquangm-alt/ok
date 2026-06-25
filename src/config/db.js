@@ -15,6 +15,10 @@ const pool = new Pool({
   ssl: shouldUseSsl(connectionString) ? { rejectUnauthorized: false } : false,
 });
 
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle pg client:', err.message);
+});
+
 async function query(text, params) {
   return pool.query(text, params);
 }
