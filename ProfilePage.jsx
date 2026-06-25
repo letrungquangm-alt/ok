@@ -136,7 +136,7 @@ export default function ProfilePage() {
             </button>
             
             {showInfoForm && (
-              <div className="page-transition" style={{ background: '#f9fbf9', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+              <div className="page-transition" style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                 <div style={{ marginBottom: '16px' }}>
                   <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Họ và tên hiển thị</span>
                   <input style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Nhập họ và tên..." required />
@@ -163,7 +163,7 @@ export default function ProfilePage() {
               style={{ 
                 width: '100%', 
                 justifyContent: 'space-between',
-                background: showPasswordForm ? '#e4e9e6' : 'transparent',
+                background: showPasswordForm ? 'var(--line)' : 'transparent',
                 border: '1px solid var(--line)',
                 color: 'var(--ink)',
                 marginBottom: showPasswordForm ? '16px' : '0'
@@ -174,7 +174,7 @@ export default function ProfilePage() {
             </button>
             
             {showPasswordForm && (
-              <div className="page-transition" style={{ background: '#f9fbf9', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+              <div className="page-transition" style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                 <div style={{ marginBottom: '16px' }}>
                   <span className="label" style={{ fontWeight: 'normal', color: 'var(--ink)' }}>Mật khẩu hiện tại</span>
                   <input type="password" style={{ width: '100%', padding: '10px', border: '1px solid var(--line)', borderRadius: '8px', background: '#fff' }} value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Nhập mật khẩu hiện tại..." />

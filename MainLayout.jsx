@@ -191,7 +191,7 @@ export default function MainLayout() {
           e.currentTarget.style.transform = 'scale(1)';
         }}
       >
-        {isLight ? '○' : '☾'}
+        {isLight ? '☾' : '○'}
       </button>
     );
   };
@@ -310,12 +310,6 @@ export default function MainLayout() {
     };
   }, []);
 
-  if (!user) {
-    if (!isPublicPath) {
-      return <Navigate to="/" replace />;
-    }
-  }
-
   const isCustomer = !user || user.role === 'KHACH' || user.role === 'CUSTOMER';
   const isAdminStaff = user && (user.role === 'ADMIN' || user.role === 'QUANLY' || user.role === 'NHANVIEN');
 
@@ -358,6 +352,10 @@ export default function MainLayout() {
       return () => controller.abort();
     }
   }, [location.pathname, isCustomer]);
+
+  if (!user && !isPublicPath) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className={renderIsClientPage ? "client-theme" : "app"} style={renderIsClientPage ? { minHeight: '100vh', display: 'flex', flexDirection: 'row', position: 'relative', background: 'var(--bg)', color: 'var(--ink)' } : {}}>

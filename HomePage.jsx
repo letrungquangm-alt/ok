@@ -398,7 +398,7 @@ export default function HomePage() {
                   width: i === current ? '24px' : '8px',
                   height: '8px',
                   borderRadius: '4px',
-                  background: i === current ? 'var(--copper)' : 'rgba(255,255,255,0.2)',
+                  background: i === current ? 'var(--copper)' : 'var(--inactive-dot, rgba(255,255,255,0.2))',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease'
                 }}
@@ -415,7 +415,7 @@ export default function HomePage() {
               fontSize: isMobile ? '26px' : '36px', 
               fontWeight: '900', 
               letterSpacing: '-1px',
-              background: 'linear-gradient(to right, #ffffff, #b66a2c)',
+              background: 'linear-gradient(to right, var(--ink), var(--copper))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
@@ -426,7 +426,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <p className="custom-desc-font" style={{ margin: 0, fontSize: '15px', color: '#cbd5e1', lineHeight: '1.6' }}>
+          <p className="custom-desc-font" style={{ margin: 0, fontSize: '15px', color: 'var(--muted)', lineHeight: '1.6' }}>
             {description}
           </p>
 
@@ -468,7 +468,7 @@ export default function HomePage() {
                     style={{ 
                       margin: 0, 
                       fontSize: '13.5px', 
-                      color: '#e2e8f0', 
+                      color: 'var(--ink)', 
                       lineHeight: '1.5', 
                       whiteSpace: 'pre-wrap',
                       position: idx === annIndex ? 'relative' : 'absolute',
@@ -497,7 +497,7 @@ export default function HomePage() {
                         width: '6px',
                         height: '6px',
                         borderRadius: '50%',
-                        background: i === annIndex ? 'var(--copper)' : 'rgba(255,255,255,0.2)',
+                        background: i === annIndex ? 'var(--copper)' : 'var(--inactive-dot, rgba(255,255,255,0.2))',
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
