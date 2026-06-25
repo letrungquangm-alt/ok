@@ -72,7 +72,8 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/web-settings')
+    const controller = new AbortController();
+    api.get('/web-settings', { signal: controller.signal })
       .then(res => {
         if (res.data) {
           if (res.data.slides && Array.isArray(res.data.slides) && res.data.slides.length > 0) {
@@ -87,8 +88,11 @@ export default function HomePage() {
         }
       })
       .catch(err => {
-        console.error('Lỗi tải cấu hình website:', err);
+        if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+          console.error('Lỗi tải cấu hình website:', err);
+        }
       });
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {

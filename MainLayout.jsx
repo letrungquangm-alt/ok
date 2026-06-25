@@ -121,7 +121,8 @@ export default function MainLayout() {
   useEffect(() => {
     setIsSidebarOpen(false); // Tự động đóng menu trượt khi chuyển trang
     if (!isCustomer) {
-      api.get('/dashboard')
+      const controller = new AbortController();
+      api.get('/dashboard', { signal: controller.signal })
         .then(res => {
           const newPaymentCount = res.data.pendingPayment || 0;
           const newEmailCount = res.data.pendingEmail || 0;
@@ -135,7 +136,12 @@ export default function MainLayout() {
           
           setPendingEmailCount(newEmailCount);
         })
-        .catch(() => {});
+        .catch(err => {
+          if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+            // Bỏ qua lỗi do huỷ request
+          }
+        });
+      return () => controller.abort();
     }
   }, [location.pathname, isCustomer]);
 

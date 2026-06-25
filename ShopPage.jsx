@@ -82,11 +82,17 @@ export default function ShopPage({ viewType = 'search' }) {
   });
 
   useEffect(() => {
-    api.get('/public-config')
+    const controller = new AbortController();
+    api.get('/public-config', { signal: controller.signal })
       .then(res => {
         if (res.data) setBankConfig(res.data);
       })
-      .catch(err => console.error('Lỗi tải cấu hình ngân hàng:', err));
+      .catch(err => {
+        if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+          console.error('Lỗi tải cấu hình ngân hàng:', err);
+        }
+      });
+    return () => controller.abort();
   }, []);
 
   // Auto-fill or redirect based on viewType
