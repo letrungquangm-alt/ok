@@ -383,9 +383,11 @@ router.post('/sepay/webhook', async (req, res, next) => {
     // 1. Thử khớp mã đơn hàng (e.g. HK-XXXX)
     for (const t of tokens) {
       if (t.startsWith('HK-')) {
-        const orderRes = await query("SELECT * FROM sales_orders WHERE UPPER(order_no) = $1 AND is_paid = FALSE", [t]);
-        if (orderRes.rows[0]) {
-          matchedOrdersList.push(orderRes.rows[0]);
+        const unpaidRes = await query("SELECT * FROM sales_orders WHERE is_paid = FALSE");
+        const cleanT = removeVietnameseTones(t);
+        const matchedOrder = unpaidRes.rows.find(order => removeVietnameseTones(order.order_no) === cleanT);
+        if (matchedOrder) {
+          matchedOrdersList.push(matchedOrder);
           break;
         }
       }
