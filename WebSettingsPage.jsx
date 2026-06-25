@@ -1,5 +1,57 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useBlocker } from 'react-router-dom';
 import api from './api';
+
+// ─── UnsavedModal component ──────────────────────────────────────────────────
+function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'fadeIn 0.15s ease'
+    }}>
+      <div style={{
+        background: 'var(--paper)', border: '1px solid var(--line)',
+        borderRadius: '16px', padding: '32px', maxWidth: '400px', width: '90%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        animation: 'slideUp 0.2s ease'
+      }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px', textAlign: 'center' }}>💾</div>
+        <h3 style={{ margin: '0 0 8px', textAlign: 'center', color: 'var(--ink)' }}>
+          Bạn chưa lưu thay đổi
+        </h3>
+        <p style={{ margin: '0 0 24px', textAlign: 'center', color: 'var(--muted)', fontSize: '14px', lineHeight: '1.5' }}>
+          Cấu hình website chưa được lưu. Bạn có muốn lưu lại trước khi rời đi không?
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button
+            className="btn primary"
+            style={{ width: '100%', padding: '10px' }}
+            onClick={onSave}
+            disabled={saving}
+          >
+            {saving ? 'Đang lưu...' : '✓ Lưu và tiếp tục'}
+          </button>
+          <button
+            className="btn secondary"
+            style={{ width: '100%', padding: '10px' }}
+            onClick={onDiscard}
+          >
+            Không lưu, rời đi
+          </button>
+          <button
+            className="btn ghost"
+            style={{ width: '100%', padding: '8px', fontSize: '13px', color: 'var(--muted)', border: 'none', background: 'none', cursor: 'pointer' }}
+            onClick={onCancel}
+          >
+            Huỷ — ở lại trang này
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── SlideEditor component ──────────────────────────────────────────────────
 function SlideEditor({ slide, index, onChange, onRemove }) {
@@ -58,7 +110,6 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
 
       {/* Form fields */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Title + Desc */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <input
             type="text"
@@ -88,7 +139,6 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
           </button>
         </div>
 
-        {/* Upload mode */}
         {mode === 'upload' && (
           <label style={{
             display: 'flex', alignItems: 'center', gap: '10px',
@@ -106,7 +156,6 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
           </label>
         )}
 
-        {/* Link mode */}
         {mode === 'link' && (
           <input
             type="url"
@@ -122,11 +171,7 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
       <button
         type="button"
         onClick={() => onRemove(index)}
-        style={{
-          background: 'none', border: 'none', color: 'var(--red)',
-          fontSize: '18px', cursor: 'pointer', padding: '4px 8px',
-          borderRadius: '4px', flexShrink: 0
-        }}
+        style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '18px', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', flexShrink: 0 }}
         title="Xoá ảnh này"
       >✕</button>
     </div>
@@ -147,17 +192,52 @@ export default function WebSettingsPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Track whether form has unsaved changes
+  const [isDirty, setIsDirty] = useState(false);
+  // Store original (saved) values to compare
+  const savedRef = useRef(null);
+
+  // Block in-app navigation when dirty
+  const blocker = useBlocker(
+    useCallback(({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+    [isDirty])
+  );
+
+  // Warn before browser close/refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   const fetchSettings = async () => {
     try {
       const res = await api.get('/web-settings');
       if (res.data) {
-        setDisplayName(res.data.display_name || '');
-        setSubHeading(res.data.sub_heading || '');
-        setDescription(res.data.description || '');
-        setAnnouncement(res.data.announcement || '');
-        setPhone(res.data.phone || '');
-        setFacetime(res.data.facetime || '');
-        setSlides(res.data.slides || []);
+        const data = {
+          display_name: res.data.display_name || '',
+          sub_heading: res.data.sub_heading || '',
+          description: res.data.description || '',
+          announcement: res.data.announcement || '',
+          phone: res.data.phone || '',
+          facetime: res.data.facetime || '',
+          slides: res.data.slides || [],
+        };
+        setDisplayName(data.display_name);
+        setSubHeading(data.sub_heading);
+        setDescription(data.description);
+        setAnnouncement(data.announcement);
+        setPhone(data.phone);
+        setFacetime(data.facetime);
+        setSlides(data.slides);
+        savedRef.current = data;
+        setIsDirty(false);
       }
     } catch (err) {
       console.error(err);
@@ -169,149 +249,186 @@ export default function WebSettingsPage() {
 
   useEffect(() => { fetchSettings(); }, []);
 
+  // Mark dirty on any field change
+  const markDirty = () => setIsDirty(true);
+
   const handleAddSlide = () => {
-    setSlides([...slides, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '' }]);
+    setSlides(prev => [...prev, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '' }]);
+    markDirty();
   };
 
   const handleRemoveSlide = (index) => {
     if (!window.confirm('Bạn có chắc muốn xoá tấm ảnh này?')) return;
-    const newSlides = [...slides];
-    newSlides.splice(index, 1);
-    setSlides(newSlides);
+    setSlides(prev => { const n = [...prev]; n.splice(index, 1); return n; });
+    markDirty();
   };
 
   const handleSlideChange = (index, field, value) => {
-    const newSlides = [...slides];
-    newSlides[index] = { ...newSlides[index], [field]: value };
-    setSlides(newSlides);
+    setSlides(prev => {
+      const n = [...prev];
+      n[index] = { ...n[index], [field]: value };
+      return n;
+    });
+    markDirty();
   };
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  // Core save logic (reusable for both form submit and modal save-and-go)
+  const doSave = async () => {
     setSaving(true);
     setErrorMsg('');
-    setSuccessMsg('');
     try {
-      await api.put('/web-settings', {
-        display_name: displayName,
-        sub_heading: subHeading,
-        description,
-        announcement,
-        phone,
-        facetime,
-        slides,
-      });
+      const payload = { display_name: displayName, sub_heading: subHeading, description, announcement, phone, facetime, slides };
+      await api.put('/web-settings', payload);
+      savedRef.current = payload;
+      setIsDirty(false);
       setSuccessMsg('Cập nhật cấu hình website thành công!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => setSuccessMsg(''), 5000);
+      return true;
     } catch (err) {
       setErrorMsg(err.response?.data?.error || 'Lỗi khi lưu cấu hình.');
+      return false;
     } finally {
       setSaving(false);
     }
   };
 
+  const handleSave = async (e) => {
+    e.preventDefault();
+    await doSave();
+  };
+
+  // Modal: Save then proceed navigation
+  const handleModalSave = async () => {
+    const ok = await doSave();
+    if (ok && blocker.proceed) blocker.proceed();
+  };
+
+  // Modal: Discard changes then proceed navigation
+  const handleModalDiscard = () => {
+    setIsDirty(false);
+    if (blocker.proceed) blocker.proceed();
+  };
+
+  // Modal: Cancel — stay on page
+  const handleModalCancel = () => {
+    if (blocker.reset) blocker.reset();
+  };
+
   if (loading) return <div style={{ padding: '20px' }}>Đang tải cấu hình website...</div>;
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <form onSubmit={handleSave} className="panel page-transition" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px' }}>
-          <h2 style={{ margin: 0, color: 'var(--green-2)' }}>Điều hành Web &amp; Nội dung Trang chủ</h2>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--muted)', fontSize: '14px' }}>Chỉnh sửa thông tin liên hệ, bảng thông báo và danh sách hình ảnh trình chiếu tại trang chủ.</p>
-        </div>
+    <>
+      {/* Unsaved changes modal */}
+      {blocker.state === 'blocked' && (
+        <UnsavedModal
+          onSave={handleModalSave}
+          onDiscard={handleModalDiscard}
+          onCancel={handleModalCancel}
+          saving={saving}
+        />
+      )}
 
-        {successMsg && (
-          <div style={{ background: '#dfeee7', color: 'var(--green-2)', border: '1px solid #cce0d6', padding: '12px 16px', borderRadius: '8px', fontWeight: 'bold' }}>
-            ✓ {successMsg}
-          </div>
-        )}
-        {errorMsg && (
-          <div style={{ background: '#fce8e8', color: 'var(--red)', border: '1px solid #f8baba', padding: '12px 16px', borderRadius: '8px', fontWeight: 'bold' }}>
-            ✕ {errorMsg}
-          </div>
-        )}
-
-        {/* --- GENERAL CONFIGURATION --- */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>⚙️ Thông tin chung</h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <span className="label">Tên hiển thị Website</span>
-              <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={displayName} onChange={e => setDisplayName(e.target.value)} required />
+      <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <form onSubmit={handleSave} className="panel page-transition" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h2 style={{ margin: 0, color: 'var(--green-2)', flex: 1 }}>Điều hành Web &amp; Nội dung Trang chủ</h2>
+              {isDirty && (
+                <span style={{ fontSize: '12px', color: 'var(--yellow, #e8a000)', background: 'rgba(232,160,0,0.12)', padding: '3px 10px', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(232,160,0,0.3)' }}>
+                  ● Chưa lưu
+                </span>
+              )}
             </div>
-            <div>
-              <span className="label">Tiêu đề phụ (Sub-heading)</span>
-              <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={subHeading} onChange={e => setSubHeading(e.target.value)} required />
+            <p style={{ margin: '4px 0 0 0', color: 'var(--muted)', fontSize: '14px' }}>Chỉnh sửa thông tin liên hệ, bảng thông báo và danh sách hình ảnh trình chiếu tại trang chủ.</p>
+          </div>
+
+          {successMsg && (
+            <div style={{ background: '#dfeee7', color: 'var(--green-2)', border: '1px solid #cce0d6', padding: '12px 16px', borderRadius: '8px', fontWeight: 'bold' }}>
+              ✓ {successMsg}
             </div>
-          </div>
-
-          <div>
-            <span className="label">Giới thiệu ngắn (Description)</span>
-            <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
-              value={description} onChange={e => setDescription(e.target.value)} required />
-          </div>
-
-          <div>
-            <span className="label">📢 Thông báo trang chủ</span>
-            <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
-              placeholder="Nhập thông báo hiển thị tại trang chủ..."
-              value={announcement} onChange={e => setAnnouncement(e.target.value)} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <span className="label">📞 Điện thoại / Zalo</span>
-              <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={phone} onChange={e => setPhone(e.target.value)} />
+          )}
+          {errorMsg && (
+            <div style={{ background: '#fce8e8', color: 'var(--red)', border: '1px solid #f8baba', padding: '12px 16px', borderRadius: '8px', fontWeight: 'bold' }}>
+              ✕ {errorMsg}
             </div>
-            <div>
-              <span className="label">✉ FaceTime</span>
-              <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={facetime} onChange={e => setFacetime(e.target.value)} />
-            </div>
-          </div>
-        </section>
+          )}
 
-        {/* --- PORTFOLIO SLIDES --- */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
-            <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '17px' }}>
-              📸 Danh sách ảnh Portfolio trang chủ ({slides.length})
-            </h3>
-            <button type="button" className="btn secondary" style={{ padding: '6px 12px', fontSize: '13px', minHeight: 'auto' }} onClick={handleAddSlide}>
-              + Thêm ảnh
+          {/* --- GENERAL CONFIGURATION --- */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>⚙️ Thông tin chung</h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <span className="label">Tên hiển thị Website</span>
+                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={displayName} onChange={e => { setDisplayName(e.target.value); markDirty(); }} required />
+              </div>
+              <div>
+                <span className="label">Tiêu đề phụ (Sub-heading)</span>
+                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={subHeading} onChange={e => { setSubHeading(e.target.value); markDirty(); }} required />
+              </div>
+            </div>
+
+            <div>
+              <span className="label">Giới thiệu ngắn (Description)</span>
+              <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
+                value={description} onChange={e => { setDescription(e.target.value); markDirty(); }} required />
+            </div>
+
+            <div>
+              <span className="label">📢 Thông báo trang chủ</span>
+              <textarea style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
+                placeholder="Nhập thông báo hiển thị tại trang chủ..."
+                value={announcement} onChange={e => { setAnnouncement(e.target.value); markDirty(); }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <span className="label">📞 Điện thoại / Zalo</span>
+                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={phone} onChange={e => { setPhone(e.target.value); markDirty(); }} />
+              </div>
+              <div>
+                <span className="label">✉ FaceTime</span>
+                <input type="text" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={facetime} onChange={e => { setFacetime(e.target.value); markDirty(); }} />
+              </div>
+            </div>
+          </section>
+
+          {/* --- PORTFOLIO SLIDES --- */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
+              <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '17px' }}>
+                📸 Danh sách ảnh Portfolio trang chủ ({slides.length})
+              </h3>
+              <button type="button" className="btn secondary" style={{ padding: '6px 12px', fontSize: '13px', minHeight: 'auto' }} onClick={handleAddSlide}>
+                + Thêm ảnh
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {slides.map((slide, index) => (
+                <SlideEditor key={index} slide={slide} index={index} onChange={handleSlideChange} onRemove={handleRemoveSlide} />
+              ))}
+              {slides.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', border: '1px dashed var(--line)', borderRadius: '8px' }}>
+                  Chưa có ảnh nào trong danh sách. Hãy nhấn nút "+ Thêm ảnh" ở trên.
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* --- ACTIONS --- */}
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: '20px', marginTop: '12px' }}>
+            <button type="submit" className="btn primary" disabled={saving || !isDirty} style={{ padding: '10px 24px', opacity: isDirty ? 1 : 0.5 }}>
+              {saving ? 'Đang lưu...' : isDirty ? 'Lưu cấu hình website' : '✓ Đã lưu'}
             </button>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {slides.map((slide, index) => (
-              <SlideEditor
-                key={index}
-                slide={slide}
-                index={index}
-                onChange={handleSlideChange}
-                onRemove={handleRemoveSlide}
-              />
-            ))}
-            {slides.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', border: '1px dashed var(--line)', borderRadius: '8px' }}>
-                Chưa có ảnh nào trong danh sách. Hãy nhấn nút "+ Thêm ảnh" ở trên.
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* --- ACTIONS --- */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--line)', paddingTop: '20px', marginTop: '12px' }}>
-          <button type="submit" className="btn primary" disabled={saving} style={{ padding: '10px 24px' }}>
-            {saving ? 'Đang lưu...' : 'Lưu cấu hình website'}
-          </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   );
 }
