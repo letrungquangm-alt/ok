@@ -60,7 +60,10 @@ export default function HomePage() {
   const [displayName, setDisplayName] = useState('Kiet Hoang Photography');
   const [subHeading, setSubHeading] = useState('Chuyên chụp ảnh chân dung, phong cảnh, kỷ yếu');
   const [description, setDescription] = useState('Chào mừng bạn đã đến với Website của Kiet Hoang Photography! Nơi lưu giữ những khung hình cảm xúc, chất lượng hình ảnh nghệ thuật đỉnh cao và chuyên nghiệp nhất.');
-  const [announcement, setAnnouncement] = useState('[Update 12/06/2026] Bắt đầu tính phí gói ảnh ở tất cả các thể loại chụp/quay.');
+  const [announcements, setAnnouncements] = useState([]);
+  const [annIndex, setAnnIndex] = useState(0);
+  const startAnnX = useRef(0);
+  const startAnnY = useRef(0);
   const [phone, setPhone] = useState('0703.01.2959');
   const [facetime, setFacetime] = useState('0703.01.2959 (Audio Only)');
   
@@ -82,7 +85,18 @@ export default function HomePage() {
           if (res.data.display_name) setDisplayName(res.data.display_name);
           if (res.data.sub_heading) setSubHeading(res.data.sub_heading);
           if (res.data.description) setDescription(res.data.description);
-          if (res.data.announcement) setAnnouncement(res.data.announcement);
+          if (res.data.announcement) {
+            try {
+              const parsed = JSON.parse(res.data.announcement);
+              if (Array.isArray(parsed)) {
+                setAnnouncements(parsed.filter(str => str && str.trim() !== ''));
+              } else {
+                setAnnouncements([res.data.announcement]);
+              }
+            } catch (e) {
+              setAnnouncements([res.data.announcement]);
+            }
+          }
           if (res.data.phone) setPhone(res.data.phone);
           if (res.data.facetime) setFacetime(res.data.facetime);
         }
@@ -108,6 +122,76 @@ export default function HomePage() {
     }, 6000); // 6s autoplay
     return () => clearInterval(timer);
   }, [current, isHovered, isDraggingState, slides.length]);
+
+  // Autoplay announcements every 3 seconds
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+    const timer = setInterval(() => {
+      setAnnIndex(prev => (prev === announcements.length - 1 ? 0 : prev + 1));
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [announcements.length]);
+
+  // Announcement Swipe Gestures
+  const handleAnnTouchStart = (e) => {
+    startAnnX.current = e.touches[0].clientX;
+    startAnnY.current = e.touches[0].clientY;
+  };
+
+  const handleAnnTouchEnd = (e) => {
+    if (announcements.length <= 1) return;
+    const diffX = e.changedTouches[0].clientX - startAnnX.current;
+    const diffY = e.changedTouches[0].clientY - startAnnY.current;
+    const threshold = 40;
+
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (Math.abs(diffX) > threshold) {
+        if (diffX > 0) {
+          setAnnIndex(prev => (prev === 0 ? announcements.length - 1 : prev - 1));
+        } else {
+          setAnnIndex(prev => (prev === announcements.length - 1 ? 0 : prev + 1));
+        }
+      }
+    } else {
+      if (Math.abs(diffY) > threshold) {
+        if (diffY > 0) {
+          setAnnIndex(prev => (prev === 0 ? announcements.length - 1 : prev - 1));
+        } else {
+          setAnnIndex(prev => (prev === announcements.length - 1 ? 0 : prev + 1));
+        }
+      }
+    }
+  };
+
+  const handleAnnMouseDown = (e) => {
+    startAnnX.current = e.clientX;
+    startAnnY.current = e.clientY;
+  };
+
+  const handleAnnMouseUp = (e) => {
+    if (announcements.length <= 1) return;
+    const diffX = e.clientX - startAnnX.current;
+    const diffY = e.clientY - startAnnY.current;
+    const threshold = 40;
+
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (Math.abs(diffX) > threshold) {
+        if (diffX > 0) {
+          setAnnIndex(prev => (prev === 0 ? announcements.length - 1 : prev - 1));
+        } else {
+          setAnnIndex(prev => (prev === announcements.length - 1 ? 0 : prev + 1));
+        }
+      }
+    } else {
+      if (Math.abs(diffY) > threshold) {
+        if (diffY > 0) {
+          setAnnIndex(prev => (prev === 0 ? announcements.length - 1 : prev - 1));
+        } else {
+          setAnnIndex(prev => (prev === announcements.length - 1 ? 0 : prev + 1));
+        }
+      }
+    }
+  };
 
   const handleNext = () => {
     if (slides.length === 0) return;
@@ -346,21 +430,81 @@ export default function HomePage() {
             {description}
           </p>
 
-          {/* Announcement Block */}
-          {announcement && (
-            <div style={{ 
-              background: 'rgba(182, 106, 44, 0.1)', 
-              borderLeft: '4px solid var(--copper)', 
-              padding: '16px 20px', 
-              borderRadius: '0 12px 12px 0',
-              marginTop: '8px'
-            }}>
-              <h4 style={{ margin: '0 0 6px 0', color: 'var(--copper)', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                📢 Thông báo
-              </h4>
-              <p style={{ margin: 0, fontSize: '13.5px', color: '#e2e8f0', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
-                {announcement}
-              </p>
+          {/* Announcement Slider Block */}
+          {announcements.length > 0 && (
+            <div 
+              onTouchStart={handleAnnTouchStart}
+              onTouchEnd={handleAnnTouchEnd}
+              onMouseDown={handleAnnMouseDown}
+              onMouseUp={handleAnnMouseUp}
+              style={{ 
+                background: 'rgba(182, 106, 44, 0.1)', 
+                borderLeft: '4px solid var(--copper)', 
+                padding: '16px 20px', 
+                borderRadius: '0 12px 12px 0',
+                marginTop: '8px',
+                position: 'relative',
+                cursor: announcements.length > 1 ? 'grab' : 'default',
+                userSelect: 'none',
+                overflow: 'hidden'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <h4 style={{ margin: 0, color: 'var(--copper)', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  📢 Thông báo
+                </h4>
+                {announcements.length > 1 && (
+                  <span style={{ fontSize: '11px', color: 'var(--copper)', opacity: 0.8 }}>
+                    {annIndex + 1} / {announcements.length}
+                  </span>
+                )}
+              </div>
+
+              {/* Announcements viewport with dynamic height */}
+              <div style={{ minHeight: '40px', position: 'relative' }}>
+                {announcements.map((ann, idx) => (
+                  <p 
+                    key={idx} 
+                    style={{ 
+                      margin: 0, 
+                      fontSize: '13.5px', 
+                      color: '#e2e8f0', 
+                      lineHeight: '1.5', 
+                      whiteSpace: 'pre-wrap',
+                      position: idx === annIndex ? 'relative' : 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      opacity: idx === annIndex ? 1 : 0,
+                      transform: idx === annIndex ? 'translateX(0)' : idx < annIndex ? 'translateX(-20px)' : 'translateX(20px)',
+                      transition: 'all 0.4s ease',
+                      pointerEvents: idx === annIndex ? 'auto' : 'none'
+                    }}
+                  >
+                    {ann}
+                  </p>
+                ))}
+              </div>
+
+              {/* Pagination indicators (Dots) */}
+              {announcements.length > 1 && (
+                <div style={{ display: 'flex', gap: '6px', marginTop: '10px', justifyContent: 'center' }}>
+                  {announcements.map((_, i) => (
+                    <span 
+                      key={i} 
+                      onClick={(e) => { e.stopPropagation(); setAnnIndex(i); }}
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: i === annIndex ? 'var(--copper)' : 'rgba(255,255,255,0.2)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

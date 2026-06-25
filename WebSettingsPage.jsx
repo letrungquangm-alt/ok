@@ -373,7 +373,7 @@ export default function WebSettingsPage() {
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
   const [description, setDescription] = useState('');
-  const [announcement, setAnnouncement] = useState('');
+  const [announcements, setAnnouncements] = useState(['']);
   const [phone, setPhone] = useState('');
   const [facetime, setFacetime] = useState('');
   const [emailFromName, setEmailFromName] = useState('');
@@ -761,6 +761,35 @@ export default function WebSettingsPage() {
     markDirty();
   };
 
+  const handleFontUpload = (e, target) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File Font phải nhỏ hơn 10MB.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result;
+      if (target === 'brand') {
+        setBrandFontUrl(base64);
+        if (!brandFontName || brandFontName === 'Be Vietnam Pro') {
+          const defaultName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+          setBrandFontName(defaultName);
+        }
+      } else {
+        setSiteFontUrl(base64);
+        if (!siteFontName || siteFontName === 'Be Vietnam Pro') {
+          const defaultName = file.name.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+          setSiteFontName(defaultName);
+        }
+      }
+      markDirty();
+    };
+    reader.readAsDataURL(file);
+  };
+
   const logoTabBtn = (active) => ({
     padding: '4px 12px',
     fontSize: '12px',
@@ -1109,6 +1138,7 @@ export default function WebSettingsPage() {
                   >
                     <option value="preset">Chọn từ danh sách có sẵn (Google Fonts)</option>
                     <option value="google">Nhập tên Google Font bất kỳ</option>
+                    <option value="upload">Tải file Font từ máy (.woff2, .woff, .ttf, .otf)</option>
                     <option value="custom_url">Nhập link file Font CSS tùy chỉnh</option>
                   </select>
 
@@ -1140,6 +1170,40 @@ export default function WebSettingsPage() {
                       onChange={e => { setBrandFontName(e.target.value); markDirty(); }}
                       required
                     />
+                  )}
+
+                  {brandFontType === 'upload' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Đặt tên Font (Ví dụ: MyBrandFont)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={brandFontName}
+                        onChange={e => { setBrandFontName(e.target.value); markDirty(); }}
+                        required
+                      />
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px',
+                        border: '1px dashed var(--line)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.02)',
+                        margin: 0
+                      }}>
+                        <span>{brandFontUrl && brandFontUrl.startsWith('data:') ? '✓ Đã tải lên file Font' : 'Chọn file Font (.woff2, .woff, .ttf, .otf)'}</span>
+                        <input 
+                          type="file" 
+                          accept=".woff2,.woff,.ttf,.otf" 
+                          style={{ display: 'none' }} 
+                          onChange={(e) => handleFontUpload(e, 'brand')} 
+                        />
+                      </label>
+                    </div>
                   )}
 
                   {brandFontType === 'custom_url' && (
@@ -1175,6 +1239,7 @@ export default function WebSettingsPage() {
                   >
                     <option value="preset">Chọn từ danh sách có sẵn (Google Fonts)</option>
                     <option value="google">Nhập tên Google Font bất kỳ</option>
+                    <option value="upload">Tải file Font từ máy (.woff2, .woff, .ttf, .otf)</option>
                     <option value="custom_url">Nhập link file Font CSS tùy chỉnh</option>
                   </select>
 
@@ -1208,6 +1273,40 @@ export default function WebSettingsPage() {
                     />
                   )}
 
+                  {siteFontType === 'upload' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Đặt tên Font (Ví dụ: MySiteFont)" 
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                        value={siteFontName}
+                        onChange={e => { setSiteFontName(e.target.value); markDirty(); }}
+                        required
+                      />
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px',
+                        border: '1px dashed var(--line)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.02)',
+                        margin: 0
+                      }}>
+                        <span>{siteFontUrl && siteFontUrl.startsWith('data:') ? '✓ Đã tải lên file Font' : 'Chọn file Font (.woff2, .woff, .ttf, .otf)'}</span>
+                        <input 
+                          type="file" 
+                          accept=".woff2,.woff,.ttf,.otf" 
+                          style={{ display: 'none' }} 
+                          onChange={(e) => handleFontUpload(e, 'site')} 
+                        />
+                      </label>
+                    </div>
+                  )}
+
                   {siteFontType === 'custom_url' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <input 
@@ -1232,6 +1331,45 @@ export default function WebSettingsPage() {
               </div>
             </div>
 
+            {/* Font Sample Preview Collapsible */}
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--line)', borderRadius: '12px', padding: '16px', marginTop: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'bold' }}>👁️ Mẫu hiển thị Font chữ thực tế</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
+                <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--copper)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    Sidebar Brand: "{brandName}" ({brandFontName})
+                  </div>
+                  <div style={{ 
+                    fontFamily: `${brandFontName}, sans-serif`, 
+                    fontSize: '24px', 
+                    fontWeight: 'bold', 
+                    color: '#fff',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {brandName}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--blue)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    Giao diện Web: ({siteFontName})
+                  </div>
+                  <div style={{ 
+                    fontFamily: `${siteFontName}, sans-serif`, 
+                    fontSize: '14px', 
+                    color: '#cbd5e1',
+                    lineHeight: '1.6'
+                  }}>
+                    Kiet Hoang Photography - Tra cứu gói ảnh của bạn.<br/>
+                    AaBbCcDdEeGgHh 0123456789 (Tiếng Việt có dấu)
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label htmlFor="ws-sub-heading" className="label">Tiêu đề phụ (Sub-heading)</label>
               <input id="ws-sub-heading" name="sub_heading" type="text" autoComplete="off" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
@@ -1245,10 +1383,55 @@ export default function WebSettingsPage() {
             </div>
 
             <div>
-              <label htmlFor="ws-announcement" className="label">📢 Thông báo trang chủ</label>
-              <textarea id="ws-announcement" name="announcement" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit' }}
-                placeholder="Nhập thông báo hiển thị tại trang chủ..."
-                value={announcement} onChange={e => { setAnnouncement(e.target.value); markDirty(); }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label className="label" style={{ margin: 0 }}>📢 Danh sách thông báo trang chủ ({announcements.length})</label>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: '4px 10px', fontSize: '12px', minHeight: 'auto' }}
+                  onClick={() => { setAnnouncements(prev => [...prev, '']); markDirty(); }}
+                >
+                  + Thêm thông báo
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {announcements.map((ann, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'start' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                      <textarea
+                        value={ann}
+                        placeholder={`Thông báo số ${idx + 1}...`}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setAnnouncements(prev => {
+                            const n = [...prev];
+                            n[idx] = val;
+                            return n;
+                          });
+                          markDirty();
+                        }}
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '60px', fontFamily: 'inherit', resize: 'vertical' }}
+                        required
+                      />
+                    </div>
+                    {announcements.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAnnouncements(prev => prev.filter((_, i) => i !== idx));
+                          markDirty();
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '18px', cursor: 'pointer', padding: '10px 4px' }}
+                        title="Xoá thông báo này"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: 'var(--muted)' }}>Các thông báo sẽ tự động xoay tua mỗi 3 giây tại Trang chủ, hỗ trợ vuốt lướt qua lại/lên xuống.</p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

@@ -16,6 +16,27 @@ function loadFont(fontType, fontName, fontUrl) {
       link.href = urlTrim;
       document.head.appendChild(link);
     }
+  } else if (fontType === 'upload' && fontUrl) {
+    const fontId = `uploaded-font-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
+    let styleTag = document.getElementById(fontId);
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = fontId;
+      document.head.appendChild(styleTag);
+    }
+    let format = 'woff2';
+    if (fontUrl.includes('x-font-ttf') || fontUrl.includes('font/ttf')) format = 'truetype';
+    else if (fontUrl.includes('font/woff') || fontUrl.includes('application/font-woff')) format = 'woff';
+    else if (fontUrl.includes('font/otf') || fontUrl.includes('x-font-opentype')) format = 'opentype';
+
+    styleTag.innerHTML = `
+      @font-face {
+        font-family: '${nameTrim}';
+        src: url('${fontUrl}') format('${format}');
+        font-weight: normal;
+        font-style: normal;
+      }
+    `;
   } else if (fontType === 'google') {
     const fontId = `gfont-${nameTrim.replace(/\s+/g, '-').toLowerCase()}`;
     let link = document.getElementById(fontId);
