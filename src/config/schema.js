@@ -206,6 +206,52 @@ async function initDb() {
   await query('CREATE INDEX IF NOT EXISTS idx_orders_status ON sales_orders(status)');
   await query('CREATE INDEX IF NOT EXISTS idx_receipts_status ON inbound_receipts(status)');
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS sent_emails (
+      id BIGSERIAL PRIMARY KEY,
+      to_email VARCHAR(255) NOT NULL,
+      subject VARCHAR(255) NOT NULL,
+      body TEXT,
+      html_body TEXT,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS web_settings (
+      key VARCHAR(100) PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+
+  const defaultSettings = [
+    { key: 'display_name', value: 'Kiet Hoang Photography' },
+    { key: 'sub_heading', value: 'Chuyên chụp ảnh chân dung, phong cảnh, kỷ yếu' },
+    { key: 'description', value: 'Chào mừng bạn đã đến với Website của Kiet Hoang Photography! Nơi lưu giữ những khung hình cảm xúc, chất lượng hình ảnh nghệ thuật đỉnh cao và chuyên nghiệp nhất.' },
+    { key: 'announcement', value: '[Update 12/06/2026] Bắt đầu tính phí gói ảnh ở tất cả các thể loại chụp/quay.' },
+    { key: 'phone', value: '0703.01.2959' },
+    { key: 'facetime', value: '0703.01.2959 (Audio Only)' },
+    { key: 'slides', value: JSON.stringify([
+      { title: 'ẢNH CHÂN DUNG', desc: 'Lưu giữ những khoảnh khắc chân thực, thần thái tự nhiên và sắc nét nhất của bạn.', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH PHONG CẢNH', desc: 'Bản hòa ca của ánh sáng và thiên nhiên hùng vĩ qua góc nhìn nghệ thuật đặc trưng.', image: 'https://images.unsplash.com/photo-1472214222541-d510753a49f8?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH KỶ YẾU', desc: 'Gói trọn thanh xuân và những nụ cười rực rỡ nhất dưới mái trường thân yêu.', image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH ĐÁM CƯỚI', desc: 'Ghi dấu câu chuyện tình yêu ngọt ngào, khoảnh khắc thiêng liêng trong ngày trọng đại.', image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH ĐƯỜNG PHỐ', desc: 'Hơi thở cuộc sống thường nhật, góc phố quen thuộc qua lăng kính đầy chất thơ.', image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH NGHỆ THUẬT', desc: 'Sáng tạo không giới hạn với những góc máy độc lạ và ý tưởng nghệ thuật phá cách.', image: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH SỰ KIỆN', desc: 'Bắt trọn không khí sôi động, chuyên nghiệp và đầy cảm xúc của mọi sự kiện.', image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH GIA ĐÌNH', desc: 'Lưu giữ khoảnh khắc sum vầy ấm áp, gắn kết tình thân gia đình qua năm tháng.', image: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH DÃ NGOẠI', desc: 'Hành trình khám phá những vùng đất mới, lưu lại dấu chân tự do và phóng khoáng.', image: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80' },
+      { title: 'ẢNH PHÒNG CHỤP', desc: 'Chuyên nghiệp trong từng set ánh sáng, làm nổi bật phong thái cá nhân tối đa.', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80' }
+    ]) }
+  ];
+
+  for (const s of defaultSettings) {
+    await query(
+      `INSERT INTO web_settings(key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`,
+      [s.key, s.value]
+    );
+  }
+
   if (process.env.APP_SEED !== 'false') {
     await seedData();
   }

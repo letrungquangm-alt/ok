@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from './api';
 import { createPortal } from 'react-dom';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function OrdersPage({ isHistory = false }) {
   const [orders, setOrders] = useState([]);
@@ -33,6 +33,15 @@ export default function OrdersPage({ isHistory = false }) {
     accountNo: '35749357',
     accountName: 'HOANG ANH KIET'
   });
+  const [selectedOrderIds, setSelectedOrderIds] = useState([]);
+
+  const handleToggleSelectOrder = (id) => {
+    if (selectedOrderIds.includes(id)) {
+      setSelectedOrderIds(selectedOrderIds.filter(x => x !== id));
+    } else {
+      setSelectedOrderIds([...selectedOrderIds, id]);
+    }
+  };
 
   useEffect(() => {
     api.get('/public-config')
@@ -46,6 +55,7 @@ export default function OrdersPage({ isHistory = false }) {
     try {
       const res = await api.get('/orders');
       setOrders(res.data.data);
+      setSelectedOrderIds([]);
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,13 +64,16 @@ export default function OrdersPage({ isHistory = false }) {
   };
 
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const queryParams = new URLSearchParams(location.search);
+  const currentTab = queryParams.get('tab') || location.state?.subTab || 'pending_email';
 
   useEffect(() => {
-    // Nếu được điều hướng từ Dashboard với subTab cụ thể thì chọn sẵn tab đó
-    if (location.state?.subTab) {
-      setSubTab(location.state.subTab);
+    if (currentTab === 'pending_email' || currentTab === 'pending_payment') {
+      setSubTab(currentTab);
     }
-  }, [location.state]);
+  }, [currentTab]);
 
   useEffect(() => {
     fetchOrders();
@@ -125,6 +138,22 @@ export default function OrdersPage({ isHistory = false }) {
     });
   };
 
+  const handleDeleteSelectedOrders = () => {
+    if (selectedOrderIds.length === 0) return;
+    setConfirmObj({
+      message: `Bạn có chắc chắn muốn xóa vĩnh viễn ${selectedOrderIds.length} đơn hàng đã chọn không? (Thao tác không thể hoàn tác)`,
+      onConfirm: async () => {
+        try {
+          await api.post('/orders/batch-delete', { ids: selectedOrderIds });
+          fetchOrders();
+          setAlertMsg('Đã xóa các đơn hàng đã chọn thành công.');
+        } catch (err) {
+          setAlertMsg(err.response?.data?.error || 'Lỗi khi xóa các đơn hàng.');
+        }
+      }
+    });
+  };
+
   const handleConfirmFree = (order) => {
     setConfirmObj({
       message: `Xác nhận đơn "${order.order_no}" cho khách hàng? Hệ thống sẽ gửi email ngay và hoàn thành đơn.`,
@@ -166,6 +195,7 @@ export default function OrdersPage({ isHistory = false }) {
     // Nếu vừa thanh toán thành công → tự động nhảy sang tab Chờ gửi mail
     if (wasSuccess) {
       setSubTab('pending_email');
+      navigate('/orders?tab=pending_email', { replace: true });
     }
     fetchOrders();
   };
@@ -173,16 +203,25 @@ export default function OrdersPage({ isHistory = false }) {
   const getMailStatusPill = (status) => {
     switch (status) {
       case 'COMPLETED': return <span className="pill green">Đã gửi</span>;
-      case 'CANCELLED': return <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)' }}>Đã hủy</span>;
+      case 'CANCELLED': return <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)' }}>đã huỷ</span>;
       default: return <span className="pill gold">Đang chờ</span>;
     }
   };
 
-  const getPaymentStatusPill = (isPaid) => {
-    if (isPaid) {
-      return <span className="pill green">Đã thanh toán</span>;
+  const getPaymentStatusPill = (o) => {
+    const isFree = o.package_type === 'Miễn phí';
+    if (o.is_paid) {
+      return isFree ? (
+        <span className="pill green">Miễn phí (Đã nhận)</span>
+      ) : (
+        <span className="pill green">Đã thanh toán</span>
+      );
     }
-    return <span className="pill red" style={{ background: '#fce8e8', color: 'var(--red)' }}>Chưa thanh toán</span>;
+    return isFree ? (
+      <span className="pill red" style={{ background: '#fce8e8', color: 'var(--red)' }}>Miễn phí (Chờ xác nhận)</span>
+    ) : (
+      <span className="pill red" style={{ background: '#fce8e8', color: 'var(--red)' }}>Chưa thanh toán</span>
+    );
   };
 
   const parseContactInfo = (address) => {
@@ -243,13 +282,28 @@ export default function OrdersPage({ isHistory = false }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <section className="panel" style={{ padding: '0', overflow: 'hidden' }}>
-        <div className="panel-head" style={{ padding: '20px 20px 10px 20px' }}><h2>{isHistory ? 'Lịch sử Đơn hàng' : 'Danh sách Đơn mới'}</h2></div>
+        <div className="panel-head" style={{ padding: '20px 20px 10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <h2>{isHistory ? 'Lịch sử Đơn hàng' : 'Danh sách Đơn mới'}</h2>
+          {isHistory && selectedOrderIds.length > 0 && (
+            <button 
+              type="button" 
+              className="btn" 
+              style={{ background: 'var(--red)', color: '#fff', border: 'none', minHeight: '38px', padding: '0 16px', fontSize: '13px' }}
+              onClick={handleDeleteSelectedOrders}
+            >
+              🗑️ Xóa {selectedOrderIds.length} đơn đã chọn
+            </button>
+          )}
+        </div>
         
         {!isHistory && (
           <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: '16px', gap: '20px', padding: '0 20px' }}>
             <button 
               type="button" 
-              onClick={() => setSubTab('pending_email')} 
+              onClick={() => {
+                setSubTab('pending_email');
+                navigate('/orders?tab=pending_email', { replace: true });
+              }} 
               style={{
                 padding: '12px 6px',
                 background: 'none',
@@ -264,11 +318,14 @@ export default function OrdersPage({ isHistory = false }) {
                 outline: 'none'
               }}
             >
-              Chờ gửi mail ({orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && o.is_paid).length})
+              Chờ chốt đơn ({orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && o.is_paid).length})
             </button>
             <button 
               type="button" 
-              onClick={() => setSubTab('pending_payment')} 
+              onClick={() => {
+                setSubTab('pending_payment');
+                navigate('/orders?tab=pending_payment', { replace: true });
+              }} 
               style={{
                 padding: '12px 6px',
                 background: 'none',
@@ -283,7 +340,7 @@ export default function OrdersPage({ isHistory = false }) {
                 outline: 'none'
               }}
             >
-              Chờ thanh toán ({orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && !o.is_paid).length})
+              Chờ khách thanh toán ({orders.filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED' && !o.is_paid).length})
             </button>
           </div>
         )}
@@ -292,20 +349,21 @@ export default function OrdersPage({ isHistory = false }) {
           <table>
             <thead>
               <tr>
-                <th style={{ width: '15%' }}>Mã Tra Cứu Khách Hàng</th>
-                <th style={{ width: '15%' }}>Mã sản phẩm (Mã Đơn)</th>
-                <th style={{ width: '12%' }}>Khách hàng</th>
-                <th style={{ width: '22%' }}>Thông tin liên hệ</th>
-                <th style={{ textAlign: 'center', whiteSpace: 'nowrap', width: '12%', paddingRight: '25px' }}>Trạng thái gửi mail</th>
-                <th style={{ width: '12%' }}>Thanh toán</th>
-                <th style={{ width: '12%' }}>Ngày tạo</th>
+                <th style={{ width: '14%' }}>Mã Tra Cứu Khách Hàng</th>
+                <th style={{ width: '14%' }}>Mã sản phẩm (Mã Đơn)</th>
+                <th style={{ width: '10%' }}>Khách hàng</th>
+                <th style={{ width: '18%' }}>Thông tin liên hệ</th>
+                <th style={{ textAlign: 'center', whiteSpace: 'nowrap', width: '11%', paddingRight: '25px' }}>Trạng thái gửi mail</th>
+                <th style={{ width: '11%' }}>Thanh toán</th>
+                <th style={{ width: '11%' }}>Giá tiền</th>
+                <th style={{ width: '11%' }}>Ngày tạo</th>
                 <th style={{ width: '10%' }}>Hành động</th>
               </tr>
             </thead>
             <tbody>
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--muted)', fontSize: '14px' }}>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: 'var(--muted)', fontSize: '14px' }}>
                     Hiện tại không có gì ở đây
                   </td>
                 </tr>
@@ -346,7 +404,14 @@ export default function OrdersPage({ isHistory = false }) {
                         </div>
                       </td>
                       <td style={{ textAlign: 'center' }}>{getMailStatusPill(o.status)}</td>
-                      <td>{getPaymentStatusPill(o.is_paid)}</td>
+                      <td>{getPaymentStatusPill(o)}</td>
+                      <td>
+                        {o.status === 'CANCELLED' ? (
+                          <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', display: 'inline-block' }}>đã huỷ</span>
+                        ) : (
+                          <strong style={{ color: 'var(--ink)' }}>{Number(o.price || 0).toLocaleString('vi-VN')} đ</strong>
+                        )}
+                      </td>
                       <td>{new Date(o.created_at).toLocaleString('vi-VN')}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -384,7 +449,30 @@ export default function OrdersPage({ isHistory = false }) {
                               )}
                             </>
                           ) : (
-                            <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', padding: '4px 10px', minHeight: 'auto' }} onClick={() => handleDeleteOrder(o.id, o.order_no)}>Xóa</button>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={selectedOrderIds.includes(o.id)} 
+                                onChange={() => handleToggleSelectOrder(o.id)}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                              />
+                              {selectedOrderIds.includes(o.id) && (
+                                <span style={{ 
+                                  background: 'var(--green-2)', 
+                                  color: '#fff', 
+                                  borderRadius: '50%', 
+                                  width: '20px', 
+                                  height: '20px', 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'center', 
+                                  fontSize: '11px',
+                                  fontWeight: 'bold'
+                                }}>
+                                  {selectedOrderIds.indexOf(o.id) + 1}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -696,10 +784,47 @@ export default function OrdersPage({ isHistory = false }) {
                     Đóng
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy thanh toán</button>
-                    <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
-                      {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
+                  <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy thanh toán</button>
+                      <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
+                        {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{
+                        width: '100%',
+                        background: '#7c3aed',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        marginTop: '4px',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      disabled={payChecking}
+                      onClick={async () => {
+                        setPayChecking(true);
+                        try {
+                          await api.post('/lookups/pay', { orderId: selectedOrderToPay.id });
+                          const res = await api.get(`/orders/${selectedOrderToPay.id}/payment-status`);
+                          setPayChecking(false);
+                          if (res.data.isPaid) {
+                            setPaySuccess(true);
+                            fetchOrders();
+                          } else {
+                            alert('Giả lập thành công nhưng kiểm tra trạng thái thất bại.');
+                          }
+                        } catch (err) {
+                          alert('Lỗi giả lập thanh toán: ' + (err.response?.data?.error || err.message));
+                          setPayChecking(false);
+                        }
+                      }}
+                    >
+                      ⚡ Giả lập thanh toán thành công (Test Admin)
                     </button>
                   </div>
                 )}

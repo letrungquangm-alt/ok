@@ -55,7 +55,7 @@ export default function CartPage() {
         message: user
           ? '🎉 Chúc mừng! Đặt hàng thành công. Bạn có thể theo dõi đơn ở mục "Đơn mua của bạn".'
           : '🎉 Chúc mừng! Đặt hàng thành công dưới tư cách Khách vãng lai.',
-        onClose: () => navigate(user ? '/my-orders' : '/shop')
+        onClose: () => navigate(user ? '/my-orders' : '/')
       });
     } catch (err) {
       setAlertObj({
@@ -75,7 +75,7 @@ export default function CartPage() {
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>🛒</div>
           Giỏ hàng đang trống. Hãy quay lại cửa hàng để chọn món đồ yêu thích nhé!
           <br/><br/>
-          <button className="btn primary" onClick={() => navigate('/shop')}>Đến cửa hàng</button>
+          <button className="btn primary" onClick={() => navigate('/')}>Quay lại Trang chủ</button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

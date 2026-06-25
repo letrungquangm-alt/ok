@@ -6,6 +6,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isFadingOut, setIsFadingOut] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -16,15 +17,30 @@ export default function LoginPage() {
       // Lưu token và thông tin user vào trình duyệt
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      // Chuyển hướng vào trang trong
-      navigate('/dashboard');
+      
+      // Start fade out transition
+      setIsFadingOut(true);
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 300);
     } catch (err) {
       setError(err.response?.data?.error || 'Đăng nhập thất bại');
     }
   };
 
   return (
-    <div className="app page-transition" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '20px' }}>
+    <div 
+      className="app page-transition" 
+      style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh', 
+        padding: '20px',
+        opacity: isFadingOut ? 0 : 1,
+        transition: 'opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+      }}
+    >
       <form 
         className="panel"
         onSubmit={handleLogin} 

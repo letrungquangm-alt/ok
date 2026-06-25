@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import LoginPage from './LoginPage';
 import MainLayout from './MainLayout';
 import ProfilePage from './ProfilePage';
@@ -7,6 +7,11 @@ import UsersPage from './UsersPage';
 import CustomersPage from './CustomersPage';
 import ShopPage from './ShopPage';
 import OrdersPage from './OrdersPage';
+import SentEmailsPage from './SentEmailsPage';
+import HomePage from './HomePage';
+import CartPage from './CartPage';
+import MyOrdersPage from './MyOrdersPage';
+import WebSettingsPage from './WebSettingsPage';
 import api from './api';
 import { createPortal } from 'react-dom';
 
@@ -139,13 +144,13 @@ const DashboardPage = () => {
       )}
 
       <section className="metrics" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <article className="metric" onClick={() => navigate('/orders', { state: { subTab: 'pending_payment' } })} style={{ cursor: 'pointer' }}>
-          <span className="label">Đang chờ kích hoạt</span>
+        <article className="metric" onClick={() => navigate('/orders?tab=pending_payment')} style={{ cursor: 'pointer' }}>
+          <span className="label">Đang chờ khách thanh toán</span>
           <div className="value">{stats.pendingPayment || 0}</div>
           <div className="trend">Đơn chưa thanh toán</div>
         </article>
-        <article className="metric" onClick={() => navigate('/orders', { state: { subTab: 'pending_email' } })} style={{ cursor: 'pointer' }}>
-          <span className="label">Đang chờ gửi email</span>
+        <article className="metric" onClick={() => navigate('/orders?tab=pending_email')} style={{ cursor: 'pointer' }}>
+          <span className="label">Đang chờ chốt đơn</span>
           <div className="value">{stats.pendingEmail || 0}</div>
           <div className="trend">Đã thanh toán, chờ xử lý</div>
         </article>
@@ -159,7 +164,7 @@ const DashboardPage = () => {
       {/* --- MODAL TẠO ĐƠN HÀNG TRA CỨU --- */}
       {showCreateOrderModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <form className="panel page-transition" style={{ width: '100%', maxWidth: '480px', padding: '24px', background: '#fff', maxHeight: '90vh', overflowY: 'auto' }} onSubmit={handleCreateOrder}>
+          <form className="panel page-transition" style={{ width: '100%', maxWidth: '720px', padding: '24px', background: '#fff', maxHeight: '90vh', overflowY: 'auto' }} onSubmit={handleCreateOrder}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
               <h3 style={{ color: 'var(--green-2)', margin: 0 }}>Tạo đơn hàng tra cứu mới</h3>
               <button type="button" className="btn ghost" style={{ border: 'none', padding: '4px 8px', minHeight: 'auto', color: 'var(--muted)' }} onClick={() => setShowCreateOrderModal(false)}>✕</button>
@@ -300,16 +305,22 @@ const DashboardPage = () => {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/toicandangnhapwebhoangkiet" element={<LoginPage />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route element={<MainLayout />}>
-        <Route path="/" element={<ShopPage viewType="search" />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/tracuugoianh" element={<ShopPage viewType="search" />} />
         <Route path="/result" element={<ShopPage viewType="result" />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/my-orders" element={<MyOrdersPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/customers" element={<CustomersPage />} />
+        <Route path="/web-settings" element={<WebSettingsPage />} />
         <Route path="/orders" element={<OrdersPage isHistory={false} />} />
         <Route path="/orders-history" element={<OrdersPage isHistory={true} />} />
+        <Route path="/emails" element={<SentEmailsPage />} />
       </Route>
     </Routes>
   );

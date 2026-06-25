@@ -8,9 +8,16 @@ export default function ShopPage({ viewType = 'search' }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [lookupResult, setLookupResult] = useState(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const navigate = useNavigate();
 
   const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Modal tạo mã
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,8 +71,8 @@ export default function ShopPage({ viewType = 'search' }) {
   // Tab kết quả tra cứu của khách hàng: 'current' (chưa thanh toán/chưa nhận) hoặc 'history' (đã thanh toán/đã nhận)
   const [activeTab, setActiveTab] = useState('current');
 
-  const currentOrders = lookupResult ? lookupResult.orders.filter(order => !order.is_paid) : [];
-  const historyOrders = lookupResult ? lookupResult.orders.filter(order => order.is_paid) : [];
+  const currentOrders = lookupResult ? lookupResult.orders.filter(order => !order.is_paid && order.status !== 'CANCELLED') : [];
+  const historyOrders = lookupResult ? lookupResult.orders.filter(order => order.is_paid && order.status !== 'CANCELLED') : [];
   const visibleOrders = activeTab === 'current' ? currentOrders : historyOrders;
 
   const [bankConfig, setBankConfig] = useState({
@@ -90,7 +97,7 @@ export default function ShopPage({ viewType = 'search' }) {
         setCodeQuery(savedCode);
         handleSearch(null, savedCode);
       } else {
-        navigate('/');
+        navigate('/tracuugoianh');
       }
     } else {
       if (savedCode) {
@@ -272,7 +279,7 @@ export default function ShopPage({ viewType = 'search' }) {
             <form onSubmit={(e) => handleSearch(e)}>
               <div style={{ marginBottom: '16px' }}>
                 <span className="label" style={{ fontSize: '15px' }}>Mã tra cứu của bạn</span>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px' }}>
                   <input 
                     ref={searchInputRef}
                     style={{ flex: 1, padding: '12px', border: '1px solid var(--line)', borderRadius: '8px', fontSize: '16px', textTransform: 'uppercase' }} 
@@ -281,7 +288,7 @@ export default function ShopPage({ viewType = 'search' }) {
                     onChange={(e) => setCodeQuery(e.target.value)} 
                     required 
                   />
-                  <button type="submit" className="btn primary" style={{ minWidth: '120px', fontSize: '15px' }} disabled={searchLoading}>
+                  <button type="submit" className="btn primary" style={{ minWidth: isMobile ? '100%' : '120px', fontSize: '15px' }} disabled={searchLoading}>
                     {searchLoading ? 'Đang tìm...' : 'Tra cứu'}
                   </button>
                 </div>
@@ -293,24 +300,20 @@ export default function ShopPage({ viewType = 'search' }) {
               </div>
             </form>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: '16px', fontSize: '14px' }}>
-              <button 
-                type="button" 
-                className="btn ghost" 
-                style={{ borderColor: 'transparent', color: 'var(--green-2)', padding: 0, minHeight: 'auto', fontWeight: 'bold', textDecoration: 'underline' }}
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: '16px', fontSize: '14px', textAlign: 'center' }}>
+              <span 
+                style={{ color: 'var(--green-2)', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}
                 onClick={() => { resetAllModals(); setShowCreateModal(true); }}
               >
                 Đăng ký mã tra cứu mới
-              </button>
+              </span>
               
-              <button 
-                type="button" 
-                className="btn ghost" 
-                style={{ borderColor: 'transparent', color: 'var(--copper)', padding: 0, minHeight: 'auto', fontWeight: 'bold', textDecoration: 'underline' }}
+              <span 
+                style={{ color: 'var(--copper)', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}
                 onClick={() => { resetAllModals(); setShowForgotModal(true); }}
               >
                 Quên mã tra cứu?
-              </button>
+              </span>
             </div>
           </section>
         </>
@@ -336,7 +339,7 @@ export default function ShopPage({ viewType = 'search' }) {
                     onClick={() => {
                       localStorage.removeItem('last_lookup_code');
                       window.dispatchEvent(new Event('lookup_change'));
-                      navigate('/');
+                      navigate('/tracuugoianh');
                     }}
                   >
                     Đăng xuất
@@ -420,7 +423,7 @@ export default function ShopPage({ viewType = 'search' }) {
                             border: '1px solid var(--line)', 
                             borderRadius: '12px', 
                             padding: '24px', 
-                            background: '#fff', 
+                            background: 'var(--paper)', 
                             boxShadow: '0 4px 12px rgba(0,0,0,0.03)', 
                             display: 'flex', 
                             flexDirection: 'column', 
@@ -442,6 +445,8 @@ export default function ShopPage({ viewType = 'search' }) {
                               <span className={`pill ${isFree ? 'gold' : 'blue'}`}>{order.package_type}</span>
                               {order.is_paid ? (
                                 <span className="pill green">{isFree ? 'Đã nhận' : 'Đã thanh toán'}</span>
+                              ) : order.status === 'CANCELLED' ? (
+                                <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)' }}>đã huỷ</span>
                               ) : (
                                 <span className="pill red" style={{ background: '#fce8e8', color: 'var(--red)' }}>{isFree ? 'Chờ xác nhận' : 'Chưa thanh toán'}</span>
                               )}
@@ -479,7 +484,7 @@ export default function ShopPage({ viewType = 'search' }) {
             <section className="panel" style={{ background: '#fff', textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
               <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>⚠️</span>
               <p>Không tìm thấy thông tin kết quả tra cứu. Vui lòng quay lại nhập mã.</p>
-              <button className="btn primary" onClick={() => navigate('/')} style={{ marginTop: '20px' }}>Quay lại</button>
+              <button className="btn primary" onClick={() => navigate('/tracuugoianh')} style={{ marginTop: '20px' }}>Quay lại</button>
             </section>
           )}
         </>
@@ -799,7 +804,7 @@ export default function ShopPage({ viewType = 'search' }) {
                   {showPayDetails && (
                     <div style={{ 
                       padding: '14px', 
-                      background: '#fff', 
+                      background: 'var(--paper)', 
                       borderTop: '1px solid var(--line)', 
                       fontSize: '13.5px', 
                       display: 'flex', 
@@ -839,10 +844,46 @@ export default function ShopPage({ viewType = 'search' }) {
                     Đóng
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy</button>
-                    <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
-                      {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
+                  <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="button" className="btn ghost" style={{ flex: 1, color: 'var(--ink)' }} disabled={payChecking} onClick={() => setSelectedOrderToPay(null)}>Hủy</button>
+                      <button type="button" className="btn primary" style={{ flex: 1 }} disabled={payChecking} onClick={triggerPaymentCheck}>
+                        {payChecking ? 'Đang xác minh...' : 'Tôi đã chuyển khoản'}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{
+                        width: '100%',
+                        background: '#7c3aed',
+                        color: '#fff',
+                        fontWeight: 'bold',
+                        border: 'none',
+                        marginTop: '4px',
+                        padding: '10px',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      disabled={payChecking}
+                      onClick={async () => {
+                        setPayChecking(true);
+                        try {
+                          await api.post('/lookups/pay', { orderId: selectedOrderToPay.id });
+                          const res = await api.get(`/orders/${selectedOrderToPay.id}/payment-status`);
+                          setPayChecking(false);
+                          if (res.data.isPaid) {
+                            setPaySuccess(true);
+                          } else {
+                            alert('Giả lập thành công nhưng kiểm tra trạng thái thất bại.');
+                          }
+                        } catch (err) {
+                          alert('Lỗi giả lập thanh toán: ' + (err.response?.data?.error || err.message));
+                          setPayChecking(false);
+                        }
+                      }}
+                    >
+                      ⚡ Giả lập thanh toán thành công (Test Admin)
                     </button>
                   </div>
                 )}
@@ -965,6 +1006,10 @@ export default function ShopPage({ viewType = 'search' }) {
                     >
                       {searchLoading ? 'Đang xử lý...' : '✓ Xác nhận nhận gói ảnh'}
                     </button>
+                  </div>
+                ) : order.status === 'CANCELLED' ? (
+                  <div style={{ background: '#fce8e8', color: 'var(--red)', padding: '12px', borderRadius: '8px', border: '1px solid #fecaca', fontSize: '14px', textAlign: 'center', fontWeight: 'bold' }}>
+                    🚫 Gói ảnh này đã bị huỷ.
                   </div>
                 ) : (
                   <div>

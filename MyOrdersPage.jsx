@@ -46,7 +46,7 @@ const handleCancelOrder = (id, orderNo) => {
       case 'LOGISTICS_RECEIVED': 
       case 'WAREHOUSE_PROCESSING': return <span className="pill blue">Đã xác nhận & Đang giao hàng</span>;
       case 'COMPLETED': return <span className="pill green">Đã giao thành công</span>;
-      case 'CANCELLED': return <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)' }}>Đã hủy</span>;
+      case 'CANCELLED': return <span className="pill" style={{ background: '#fce8e8', color: 'var(--red)' }}>đã huỷ</span>;
       default: return <span className="pill gold">{status}</span>;
     }
   };

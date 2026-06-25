@@ -316,6 +316,7 @@ router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
 
       const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
         `Chúng tôi đã nhận được đăng ký gói ảnh miễn phí của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
+        `Dưới đây là toàn bộ gói ảnh của bạn:\n` +
         `Link Drive: ${order.drive_link || 'Chưa cung cấp'}\n` +
         `Mật khẩu Drive: ${order.drive_password || 'Không có'}\n\n` +
         `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
@@ -324,6 +325,7 @@ router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
       const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
         `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
         `<p>Chúng tôi đã nhận được thông tin <strong>đăng ký gói ảnh miễn phí</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
+        `<p>Dưới đây là toàn bộ gói ảnh của bạn!</p>` +
         (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` : '') +
         `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${order.drive_password || 'Không có'}</code></p>` +
         `<br/>` +
@@ -755,9 +757,9 @@ router.post('/orders/lookup-create', requireRole('ADMIN', 'QUANLY'), async (req,
     if (wRes.rows.length === 0) return res.status(400).json({ error: 'Hệ thống chưa cấu hình kho xử lý' });
     const warehouseId = wRes.rows[0].id;
 
-    const cleanProdName = removeVietnameseTones(productName);
+    const cleanProdName = productName.trim().replace(/\s+/g, ' ').substring(0, 30).trim();
     const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const orderNo = `HK-${cleanProdName}${randomStr}`;
+    const orderNo = `HK-${cleanProdName}-${randomStr}`;
     const orderStatus = 'DRAFT';
 
     // Tính ngày hết hạn và hạn cấp lại từ thời gian cấp link (nếu có)
@@ -919,24 +921,49 @@ router.put('/orders/:id/lookup-update', requireRole('ADMIN', 'QUANLY'), async (r
 
       const emailSubject = `[HoangKiet] Cập nhật thông tin đơn hàng ${orderNoText}`;
       
+      const activePreviewImage = previewImage || order.preview_image;
+      const attachments = [];
+      let previewHtml = '';
+
+      if (activePreviewImage && activePreviewImage.trim() !== '') {
+        const base64Regex = /^data:(image\/[a-zA-Z0-9-.+]+);base64,(.+)$/;
+        const match = activePreviewImage.match(base64Regex);
+        
+        if (match) {
+          const contentType = match[1];
+          const base64Data = match[2];
+          const extension = contentType.split('/')[1] || 'png';
+          const cidName = `preview_image_${Date.now()}.${extension}`;
+          
+          attachments.push({
+            filename: `preview.${extension}`,
+            content: Buffer.from(base64Data, 'base64'),
+            cid: cidName
+          });
+          
+          previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
+            `<div style="margin: 20px 0;"><img src="cid:${cidName}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+        } else {
+          // If it is a normal URL (e.g. hosted somewhere)
+          previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
+            `<div style="margin: 20px 0;"><img src="${activePreviewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+        }
+      }
+
       const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
         `Chúng tôi đã nhận được thông tin ${paymentStatus} của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
-        (previewImage ? `[Ảnh xem trước đính kèm trong email]\n\n` : '') +
+        (activePreviewImage && activePreviewImage.trim() !== '' ? `[Ảnh xem trước đính kèm trong email]\n\n` : '') +
+        `Dưới đây là toàn bộ gói ảnh của bạn:\n` +
         `Link Drive: ${driveLink || order.drive_link || 'Chưa cung cấp'}\n` +
         `Mật khẩu Drive: ${drivePassword || order.drive_password || 'Không có'}\n\n` +
         `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
         `Trân trọng,\nBan quản trị hệ thống.`;
 
-      let previewHtml = '';
-      if (previewImage) {
-        previewHtml = `<div style="margin: 20px 0;"><img src="${previewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
-      }
-
       const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
         `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
         `<p>Chúng tôi đã nhận được thông tin <strong>${paymentStatus}</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
-        `<h3>Ảnh xem trước của bạn:</h3>` +
         previewHtml +
+        `<p>Dưới đây là toàn bộ gói ảnh của bạn!</p>` +
         `<p><strong>Link Drive tải ảnh:</strong> <a href="${driveLink || order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` +
         `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${drivePassword || order.drive_password || 'Không có'}</code></p>` +
         `<br/>` +
@@ -948,7 +975,8 @@ router.put('/orders/:id/lookup-update', requireRole('ADMIN', 'QUANLY'), async (r
         to: lookup.email,
         subject: emailSubject,
         text: textMail,
-        html: htmlMail
+        html: htmlMail,
+        attachments: attachments.length > 0 ? attachments : undefined
       }).catch(err => console.error('Failed to send update lookup email:', err.message));
     }
 
@@ -996,7 +1024,7 @@ router.post('/my-orders/:id/cancel', async (req, res, next) => {
     if (order.rows[0].status !== 'DRAFT') return res.status(400).json({ error: 'Chỉ có thể hủy đơn hàng đang chờ xác nhận' });
     
     await query(`UPDATE sales_orders SET status = 'CANCELLED', cancelled_at = NOW() WHERE id = $1`, [req.params.id]);
-    res.json({ message: 'Đã hủy đơn hàng' });
+    res.json({ message: 'Đã huỷ đơn hàng' });
   } catch (error) { next(error); }
 });
 
@@ -1076,5 +1104,111 @@ function apiOrderAction(action) {
     }
   };
 }
+
+// GET /api/emails - Lấy danh sách email đã gửi
+router.get('/emails', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    const result = await query('SELECT * FROM sent_emails ORDER BY sent_at DESC');
+    res.json({ data: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/emails/:id - Xoá một email cụ thể theo ID
+router.delete('/emails/:id', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await query('DELETE FROM sent_emails WHERE id = $1', [id]);
+    res.json({ message: 'Đã xoá lịch sử gửi mail thành công!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/emails - Xoá toàn bộ email đã gửi
+router.delete('/emails', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    await query('TRUNCATE TABLE sent_emails');
+    res.json({ message: 'Đã xoá sạch toàn bộ lịch sử gửi mail!' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/emails/batch-delete - Xoá nhiều email theo danh sách ID
+router.post('/emails/batch-delete', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  try {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ error: 'Danh sách ID không hợp lệ' });
+    }
+    if (ids.length === 0) {
+      return res.json({ message: 'Không có email nào được chọn để xoá' });
+    }
+    
+    await query('DELETE FROM sent_emails WHERE id = ANY($1::bigint[])', [ids]);
+    res.json({ message: `Đã xoá ${ids.length} email thành công!` });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/orders/batch-delete - Xoá nhiều đơn hàng theo danh sách ID
+router.post('/orders/batch-delete', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    return res.status(400).json({ error: 'Danh sách ID không hợp lệ' });
+  }
+  if (ids.length === 0) {
+    return res.json({ message: 'Không có đơn hàng nào được chọn để xoá' });
+  }
+  try {
+    const issueRes = await query('SELECT id FROM stock_issues WHERE order_id = ANY($1::bigint[])', [ids]);
+    const issueIds = issueRes.rows.map(row => row.id);
+    if (issueIds.length > 0) {
+      await query('DELETE FROM stock_issue_lines WHERE issue_id = ANY($1::bigint[])', [issueIds]);
+      await query('DELETE FROM stock_issues WHERE id = ANY($1::bigint[])', [issueIds]);
+    }
+    await query('DELETE FROM sales_orders WHERE id = ANY($1::bigint[])', [ids]);
+    res.json({ message: `Đã xóa ${ids.length} đơn hàng thành công!` });
+  } catch (error) { next(error); }
+});
+
+// GET /api/web-settings - Lấy thông tin cấu hình website trang chủ
+router.get('/web-settings', async (req, res, next) => {
+  try {
+    const result = await query('SELECT key, value FROM web_settings');
+    const settings = {};
+    result.rows.forEach(row => {
+      let val = row.value;
+      if (row.key === 'slides') {
+        try {
+          val = JSON.parse(row.value);
+        } catch (e) {}
+      }
+      settings[row.key] = val;
+    });
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/web-settings - Cập nhật cấu hình website trang chủ
+router.put('/web-settings', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {
+  try {
+    const body = req.body;
+    for (const key of Object.keys(body)) {
+      await query(
+        'INSERT INTO web_settings(key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+        [key, typeof body[key] === 'object' ? JSON.stringify(body[key]) : String(body[key])]
+      );
+    }
+    res.json({ message: 'Cập nhật cấu hình thành công!' });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

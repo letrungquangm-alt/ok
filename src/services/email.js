@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { query } = require('../config/db');
 
 const host = process.env.SMTP_HOST;
 const port = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -19,16 +20,23 @@ if (host && user && pass) {
   });
 }
 
-async function sendEmail({ to, subject, text, html }) {
+async function sendEmail({ to, subject, text, html, attachments }) {
   console.log(`\n==================================================`);
   console.log(`[EMAIL SENDING DETECTED]`);
   console.log(`To: ${to}`);
   console.log(`Subject: ${subject}`);
   console.log(`Content:\n${text || html}`);
+  if (attachments && attachments.length > 0) {
+    console.log(`Attachments: ${attachments.map(a => a.filename || a.cid).join(', ')}`);
+  }
   console.log(`==================================================\n`);
 
   if (!transporter) {
     console.log(`[SMTP WARNING] SMTP configuration not found in environment. Email logged to console instead.`);
+    await query(
+      'INSERT INTO sent_emails (to_email, subject, body, html_body) VALUES ($1, $2, $3, $4)',
+      [to, subject, text || '', html || '']
+    ).catch(err => console.error('Lỗi lưu email giả lập vào database:', err.message));
     return { mock: true, messageId: 'mock-id-' + Date.now() };
   }
 
@@ -39,8 +47,13 @@ async function sendEmail({ to, subject, text, html }) {
       subject,
       text,
       html,
+      attachments,
     });
     console.log(`[EMAIL SUCCESS] Message sent: ${info.messageId}`);
+    await query(
+      'INSERT INTO sent_emails (to_email, subject, body, html_body) VALUES ($1, $2, $3, $4)',
+      [to, subject, text || '', html || '']
+    ).catch(err => console.error('Lỗi lưu email gửi thành công vào database:', err.message));
     return info;
   } catch (error) {
     console.error(`[EMAIL ERROR] Failed to send email:`, error.message);
