@@ -65,6 +65,18 @@ function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, payme
   `;
 }
 
+// Helper to update browser tab favicon dynamically
+function updateFavicon(url) {
+  if (!url) return;
+  let link = document.querySelector("link[rel~='icon']");
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.getElementsByTagName('head')[0].appendChild(link);
+  }
+  link.href = url;
+}
+
 // ─── UnsavedModal component ──────────────────────────────────────────────────
 function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
   return (
@@ -271,6 +283,7 @@ export default function WebSettingsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [siteTitle, setSiteTitle] = useState('');
+  const [siteLogo, setSiteLogo] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
   const [description, setDescription] = useState('');
@@ -367,6 +380,7 @@ export default function WebSettingsPage() {
       if (res.data) {
         const data = {
           site_title: res.data.site_title || '',
+          site_logo: res.data.site_logo || '',
           display_name: res.data.display_name || '',
           sub_heading: res.data.sub_heading || '',
           description: res.data.description || '',
@@ -380,6 +394,7 @@ export default function WebSettingsPage() {
           slides: res.data.slides || [],
         };
         setSiteTitle(data.site_title);
+        setSiteLogo(data.site_logo);
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
@@ -490,6 +505,7 @@ export default function WebSettingsPage() {
     try {
       const payload = {
         site_title: siteTitle,
+        site_logo: siteLogo,
         display_name: displayName,
         sub_heading: subHeading,
         description,
@@ -507,6 +523,9 @@ export default function WebSettingsPage() {
       setIsDirty(false);
       if (siteTitle) {
         document.title = siteTitle;
+      }
+      if (siteLogo) {
+        updateFavicon(siteLogo);
       }
       setSuccessMsg('Cập nhật cấu hình website thành công!');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -530,6 +549,7 @@ export default function WebSettingsPage() {
     const data = savedRef.current;
     if (data) {
       setSiteTitle(data.site_title || '');
+      setSiteLogo(data.site_logo || '');
       setDisplayName(data.display_name || '');
       setSubHeading(data.sub_heading || '');
       setDescription(data.description || '');

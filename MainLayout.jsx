@@ -18,6 +18,7 @@ export default function MainLayout() {
   const [pendingEmailCount, setPendingEmailCount] = useState(0);
   const [hasClickedPendingPayment, setHasClickedPendingPayment] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [siteLogo, setSiteLogo] = useState('');
 
   const [renderIsClientPage, setRenderIsClientPage] = useState(isClientPage);
   const [contentOpacity, setContentOpacity] = useState(1);
@@ -59,14 +60,31 @@ export default function MainLayout() {
     };
   }, [location.pathname]);
 
+  const updateFavicon = (url) => {
+    if (!url) return;
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = url;
+  };
+
   useEffect(() => {
     api.get('/web-settings')
       .then(res => {
-        if (res.data && res.data.site_title) {
-          document.title = res.data.site_title;
+        if (res.data) {
+          if (res.data.site_title) {
+            document.title = res.data.site_title;
+          }
+          if (res.data.site_logo) {
+            setSiteLogo(res.data.site_logo);
+            updateFavicon(res.data.site_logo);
+          }
         }
       })
-      .catch(err => console.error('Lỗi tải tiêu đề website:', err));
+      .catch(err => console.error('Lỗi tải cấu hình website:', err));
   }, []);
 
   const getBottomNavLinkStyle = (path) => {
@@ -576,7 +594,11 @@ export default function MainLayout() {
       {/* Unified Morphing Navbar */}
       <aside className={`sidebar-morph ${isClientPage ? 'capsule-mode' : 'sidebar-mode'} ${isClientPage ? (isAdminStaff ? 'has-admin' : (user ? 'has-logout' : 'guest')) : ''} ${isSidebarOpen ? 'open' : ''}`}>
         <div className="brand brand-section" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="Về trang chủ">
-          <span className="brand-mark">📸</span>
+          {siteLogo ? (
+            <img src={siteLogo} alt="Logo" className="brand-mark" style={{ width: '24px', height: '24px', objectFit: 'contain', borderRadius: '4px' }} />
+          ) : (
+            <span className="brand-mark">📸</span>
+          )}
           <span className="brand-text">HoangKiet</span>
         </div>
         
