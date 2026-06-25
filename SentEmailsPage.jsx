@@ -63,11 +63,42 @@ export default function SentEmailsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <section className="panel" style={{ padding: '0', overflow: 'hidden' }}>
+      <style>{`
+        .sent-emails-panel {
+          background: #000000 !important;
+          color: #ffffff !important;
+          border: 1px solid #1c221e !important;
+        }
+        .sent-emails-panel .panel-head h2 {
+          color: #ffffff !important;
+        }
+        .sent-emails-panel .panel-head p {
+          color: #aaaaaa !important;
+        }
+        .sent-emails-table {
+          background: #000000 !important;
+          color: #ffffff !important;
+          width: 100%;
+        }
+        .sent-emails-table th {
+          background: #111111 !important;
+          color: #94a3b8 !important;
+          border-bottom: 2px solid #1c221e !important;
+        }
+        .sent-emails-table td {
+          background: #000000 !important;
+          color: #ffffff !important;
+          border-bottom: 1px solid #1c221e !important;
+        }
+        .sent-emails-table tr:hover td {
+          background: #111111 !important;
+        }
+      `}</style>
+      <section className="panel sent-emails-panel" style={{ padding: '0', overflow: 'hidden' }}>
         <div className="panel-head" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h2 style={{ margin: 0 }}>Thư đã gửi (Lịch sử gửi Mail)</h2>
-            <p style={{ margin: '4px 0 0 0', color: 'var(--muted)', fontSize: '13px' }}>
+            <h2 style={{ margin: 0, color: '#ffffff' }}>Thư đã gửi (Lịch sử gửi Mail)</h2>
+            <p style={{ margin: '4px 0 0 0', color: '#aaaaaa', fontSize: '13px' }}>
               Danh sách ghi nhận các email đã gửi thành công hoặc giả lập từ hệ thống cho khách hàng.
             </p>
           </div>
@@ -84,7 +115,7 @@ export default function SentEmailsPage() {
         </div>
 
         {/* Tìm kiếm */}
-        <div style={{ padding: '0 20px 16px 20px', borderBottom: '1px solid var(--line)' }}>
+        <div style={{ padding: '0 20px 16px 20px', borderBottom: '1px solid #1c221e' }}>
           <input 
             type="text" 
             placeholder="Tìm kiếm theo người nhận hoặc tiêu đề..."
@@ -95,7 +126,7 @@ export default function SentEmailsPage() {
               maxWidth: '400px', 
               padding: '10px 14px', 
               borderRadius: '8px', 
-              border: '1px solid var(--line)',
+              border: '1px solid #1c221e',
               outline: 'none',
               fontSize: '14px',
               fontFamily: 'inherit'
@@ -104,7 +135,7 @@ export default function SentEmailsPage() {
         </div>
 
         <div className="table-wrap" style={{ padding: '0 20px 20px 20px' }}>
-          <table>
+          <table className="sent-emails-table">
             <thead>
               <tr>
                 <th style={{ width: '25%' }}>Người nhận</th>
@@ -116,7 +147,7 @@ export default function SentEmailsPage() {
             <tbody>
               {filteredEmails.length === 0 ? (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)', fontSize: '14px' }}>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '40px', color: '#aaaaaa', fontSize: '14px' }}>
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có email nào được ghi nhận'}
                   </td>
                 </tr>
@@ -124,12 +155,12 @@ export default function SentEmailsPage() {
                 filteredEmails.map(e => (
                   <tr key={e.id}>
                     <td>
-                      <strong style={{ color: 'var(--ink)' }}>{e.to_email}</strong>
+                      <strong style={{ color: '#ffffff' }}>{e.to_email}</strong>
                     </td>
                     <td>
-                      <span style={{ fontSize: '14px', fontWeight: '500' }}>{e.subject}</span>
+                      <span style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{e.subject}</span>
                     </td>
-                    <td style={{ color: 'var(--muted)', fontSize: '13px' }}>
+                    <td style={{ color: '#aaaaaa', fontSize: '13px' }}>
                       {new Date(e.sent_at).toLocaleString('vi-VN')}
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -179,22 +210,22 @@ export default function SentEmailsPage() {
 
       {/* --- MODAL XEM CHI TIẾT EMAIL --- */}
       {selectedEmail && createPortal(
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div className="panel page-transition" style={{ width: '100%', maxWidth: '720px', height: '85vh', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', background: '#fff', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: '#f9fbf9' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '720px', height: '85vh', display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden', background: '#121614', border: '1px solid #1c221e', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #1c221e', background: '#181d1a' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--ink)' }}>Chi tiết email</h3>
-                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Thời gian: {new Date(selectedEmail.sent_at).toLocaleString('vi-VN')}</span>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#ffffff' }}>Chi tiết email</h3>
+                <span style={{ fontSize: '12px', color: '#aaaaaa' }}>Thời gian: {new Date(selectedEmail.sent_at).toLocaleString('vi-VN')}</span>
               </div>
-              <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: 'var(--muted)' }} onClick={() => setSelectedEmail(null)}>✕</button>
+              <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: '#aaaaaa' }} onClick={() => setSelectedEmail(null)}>✕</button>
             </div>
             
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', background: '#fff' }}>
-              <div style={{ marginBottom: '8px' }}><span style={{ color: 'var(--muted)', fontSize: '13px' }}>Tới:</span> <strong>{selectedEmail.to_email}</strong></div>
-              <div><span style={{ color: 'var(--muted)', fontSize: '13px' }}>Tiêu đề:</span> <strong>{selectedEmail.subject}</strong></div>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #1c221e', background: '#121614', color: '#ffffff' }}>
+              <div style={{ marginBottom: '8px' }}><span style={{ color: '#aaaaaa', fontSize: '13px' }}>Tới:</span> <strong>{selectedEmail.to_email}</strong></div>
+              <div><span style={{ color: '#aaaaaa', fontSize: '13px' }}>Tiêu đề:</span> <strong>{selectedEmail.subject}</strong></div>
             </div>
 
-            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#fcfcfc' }}>
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto', background: '#090b0a' }}>
               {selectedEmail.html_body ? (
                 <iframe 
                   title="Email Preview" 
@@ -207,17 +238,18 @@ export default function SentEmailsPage() {
                   whiteSpace: 'pre-wrap', 
                   fontFamily: 'monospace', 
                   fontSize: '13.5px', 
-                  background: '#f4f4f4', 
+                  background: '#181d1a', 
+                  color: '#ffffff',
                   padding: '16px', 
                   borderRadius: '6px',
-                  border: '1px solid var(--line)'
+                  border: '1px solid #1c221e'
                 }}>
                   {selectedEmail.body}
                 </pre>
               )}
             </div>
 
-            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--line)', textAlign: 'right', background: '#f9fbf9' }}>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid #1c221e', textAlign: 'right', background: '#181d1a' }}>
               <button type="button" className="btn primary" style={{ minHeight: '36px' }} onClick={() => setSelectedEmail(null)}>Đóng</button>
             </div>
           </div>

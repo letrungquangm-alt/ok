@@ -1202,7 +1202,33 @@ function apiOrderAction(action) {
 router.get('/emails', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), async (req, res, next) => {
   try {
     const result = await query('SELECT * FROM sent_emails ORDER BY sent_at DESC');
-    res.json({ data: result.rows });
+    const emails = [];
+    for (const row of result.rows) {
+      let htmlBody = row.html_body || '';
+      if (htmlBody.toLowerCase().includes('cid:')) {
+        try {
+          const orderRes = await query(
+            `SELECT preview_image FROM sales_orders 
+             WHERE ($1 LIKE '%' || order_no || '%' OR $2 LIKE '%' || order_no || '%')
+               AND preview_image IS NOT NULL AND preview_image != ''
+             LIMIT 1`,
+            [row.subject, row.body || '']
+          );
+          if (orderRes.rows.length > 0 && orderRes.rows[0].preview_image) {
+            const imgUrl = orderRes.rows[0].preview_image;
+            // Replace src="cid:..." or src='cid:...' with src="imgUrl"
+            htmlBody = htmlBody.replace(/src=["']cid:[^"']+["']/g, `src="${imgUrl}"`);
+          }
+        } catch (err) {
+          console.error('Lỗi khi nạp ảnh xem trước cho lịch sử email:', err.message);
+        }
+      }
+      emails.push({
+        ...row,
+        html_body: htmlBody
+      });
+    }
+    res.json({ data: emails });
   } catch (error) {
     next(error);
   }
