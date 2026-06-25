@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import api from './api';
 
 // Helper to render plain text email template into beautiful HTML preview
-function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, paymentStatus, driveLink, drivePassword, previewImageSrc }) {
+function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, paymentStatus, driveLink, drivePassword, previewImageSrc, footer }) {
   // Format links & replacements with Scratch block colors
   const orderNoHtml = `<span style="background-color: #ffab19; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${orderNo}</span>`;
   const fullNameHtml = `<span style="background-color: #4c97ff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${fullName}</span>`;
@@ -59,7 +59,7 @@ function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, payme
         ${contentHtml}
       </div>
       <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #1c221e; font-size: 11px; color: #94a3b8; text-align: center;">
-        Đây là email tự động gửi từ hệ thống HoangKiet Photography.<br/>Vui lòng không trả lời trực tiếp email này.
+        ${(footer || 'Đây là email tự động gửi từ hệ thống HoangKiet Photography.\nVui lòng không trả lời trực tiếp email này.').replace(/\r?\n/g, '<br/>')}
       </div>
     </div>
   `;
@@ -247,6 +247,25 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
   );
 }
 
+const DEFAULT_EMAIL_FROM_NAME = 'HoangKiet';
+const DEFAULT_EMAIL_SUBJECT = '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}';
+const DEFAULT_EMAIL_BODY = `Xin chào {full_name} với mã tra cứu {lookup_code},
+
+Chúng tôi đã nhận được thông tin {payment_status} của bạn và đơn hàng {order_no} đã hoàn thành!
+
+{preview_image}
+
+Dưới đây là toàn bộ gói ảnh của bạn:
+Link Drive tải ảnh: {drive_link}
+Mật khẩu: {drive_password}
+
+Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!
+
+Trân trọng,
+Ban quản trị HoangKiet`;
+
+const DEFAULT_EMAIL_FOOTER = 'Đây là email tự động gửi từ hệ thống HoangKiet Photography.\nVui lòng không trả lời trực tiếp email này.';
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function WebSettingsPage() {
   const navigate = useNavigate();
@@ -257,14 +276,23 @@ export default function WebSettingsPage() {
   const [announcement, setAnnouncement] = useState('');
   const [phone, setPhone] = useState('');
   const [facetime, setFacetime] = useState('');
+  const [emailFromName, setEmailFromName] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const [emailFooter, setEmailFooter] = useState('');
   const [slides, setSlides] = useState([]);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [activePreviewTab, setActivePreviewTab] = useState('paid');
+  const [activePreviewTab, setActivePreviewTab] = useState('paid_with_img');
+  const [emailConfigExpanded, setEmailConfigExpanded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const startX = useRef(0);
+  const currentX = useRef(0);
+  const sliderContainerRef = useRef(null);
   const lastFocusedInput = useRef(null);
 
   // Track whether form has unsaved changes
@@ -343,8 +371,10 @@ export default function WebSettingsPage() {
           announcement: res.data.announcement || '',
           phone: res.data.phone || '',
           facetime: res.data.facetime || '',
+          email_from_name: res.data.email_from_name || '',
           email_subject: res.data.email_subject || '',
           email_body: res.data.email_body || '',
+          email_footer: res.data.email_footer || '',
           slides: res.data.slides || [],
         };
         setDisplayName(data.display_name);
@@ -353,8 +383,10 @@ export default function WebSettingsPage() {
         setAnnouncement(data.announcement);
         setPhone(data.phone);
         setFacetime(data.facetime);
+        setEmailFromName(data.email_from_name);
         setEmailSubject(data.email_subject);
         setEmailBody(data.email_body);
+        setEmailFooter(data.email_footer);
         setSlides(data.slides);
         savedRef.current = data;
         setIsDirty(false);
@@ -372,14 +404,35 @@ export default function WebSettingsPage() {
   // Mark dirty on any field change
   const markDirty = () => setIsDirty(true);
 
+  const handleResetEmailTemplate = () => {
+    if (window.confirm('Bạn có chắc chắn muốn khôi phục cấu hình email về mặc định ban đầu?')) {
+      setEmailFromName(DEFAULT_EMAIL_FROM_NAME);
+      setEmailSubject(DEFAULT_EMAIL_SUBJECT);
+      setEmailBody(DEFAULT_EMAIL_BODY);
+      setEmailFooter(DEFAULT_EMAIL_FOOTER);
+      markDirty();
+    }
+  };
+
   const handleAddSlide = () => {
-    setSlides(prev => [...prev, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '' }]);
+    setSlides(prev => {
+      const nextSlides = [...prev, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '' }];
+      const nextTotalPages = Math.ceil(nextSlides.length / 5);
+      setCurrentPage(nextTotalPages - 1);
+      return nextSlides;
+    });
     markDirty();
   };
 
   const handleRemoveSlide = (index) => {
     if (!window.confirm('Bạn có chắc muốn xoá tấm ảnh này?')) return;
-    setSlides(prev => { const n = [...prev]; n.splice(index, 1); return n; });
+    setSlides(prev => {
+      const n = [...prev];
+      n.splice(index, 1);
+      const nextTotalPages = Math.max(1, Math.ceil(n.length / 5));
+      setCurrentPage(p => Math.min(p, nextTotalPages - 1));
+      return n;
+    });
     markDirty();
   };
 
@@ -390,6 +443,41 @@ export default function WebSettingsPage() {
       return n;
     });
     markDirty();
+  };
+
+  const handleDragStart = (e) => {
+    const tagName = e.target.tagName.toLowerCase();
+    if (tagName === 'input' || tagName === 'textarea' || tagName === 'button' || tagName === 'select' || e.target.closest('label') || e.target.closest('button')) {
+      return;
+    }
+    setIsDragging(true);
+    startX.current = e.touches ? e.touches[0].clientX : e.clientX;
+    currentX.current = startX.current;
+  };
+
+  const handleDragMove = (e) => {
+    if (!isDragging) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    currentX.current = x;
+    const diffX = x - startX.current;
+    const containerWidth = sliderContainerRef.current ? sliderContainerRef.current.offsetWidth : 1000;
+    const offsetPercent = -diffX / containerWidth;
+    setDragOffset(offsetPercent);
+  };
+
+  const handleDragEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const totalPages = Math.max(1, Math.ceil(slides.length / 5));
+    const threshold = 0.15;
+    let newPage = currentPage;
+    if (dragOffset > threshold && currentPage < totalPages - 1) {
+      newPage = currentPage + 1;
+    } else if (dragOffset < -threshold && currentPage > 0) {
+      newPage = currentPage - 1;
+    }
+    setCurrentPage(newPage);
+    setDragOffset(0);
   };
 
   // Core save logic (reusable for both form submit and modal save-and-go)
@@ -404,8 +492,10 @@ export default function WebSettingsPage() {
         announcement,
         phone,
         facetime,
+        email_from_name: emailFromName,
         email_subject: emailSubject,
         email_body: emailBody,
+        email_footer: emailFooter,
         slides
       };
       await api.put('/web-settings', payload);
@@ -489,72 +579,136 @@ export default function WebSettingsPage() {
             </div>
 
             {/* Navigation Tabs */}
-            <div style={{ display: 'flex', gap: '8px', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'rgba(255,255,255,0.01)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'rgba(255,255,255,0.01)' }}>
               <button
                 type="button"
-                onClick={() => setActivePreviewTab('paid')}
+                onClick={() => setActivePreviewTab('paid_with_img')}
                 style={{
                   padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
                   fontWeight: 'bold', fontSize: '13px',
-                  background: activePreviewTab === 'paid' ? 'var(--green-2)' : 'transparent',
-                  color: activePreviewTab === 'paid' ? '#fff' : 'var(--muted)'
+                  background: activePreviewTab === 'paid_with_img' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'paid_with_img' ? '#fff' : 'var(--muted)'
                 }}
               >
-                💵 Mẫu 1: Gói Trả Phí (Có ảnh)
+                💵 Trả Phí (Có ảnh)
               </button>
               <button
                 type="button"
-                onClick={() => setActivePreviewTab('free')}
+                onClick={() => setActivePreviewTab('paid_no_img')}
                 style={{
                   padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
                   fontWeight: 'bold', fontSize: '13px',
-                  background: activePreviewTab === 'free' ? 'var(--green-2)' : 'transparent',
-                  color: activePreviewTab === 'free' ? '#fff' : 'var(--muted)'
+                  background: activePreviewTab === 'paid_no_img' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'paid_no_img' ? '#fff' : 'var(--muted)'
                 }}
               >
-                🎁 Mẫu 2: Gói Miễn Phí (Không ảnh)
+                💵 Trả Phí (Không ảnh)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('free_with_img')}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
+                  fontWeight: 'bold', fontSize: '13px',
+                  background: activePreviewTab === 'free_with_img' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'free_with_img' ? '#fff' : 'var(--muted)'
+                }}
+              >
+                🎁 Miễn Phí (Có ảnh)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('free_no_img')}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
+                  fontWeight: 'bold', fontSize: '13px',
+                  background: activePreviewTab === 'free_no_img' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'free_no_img' ? '#fff' : 'var(--muted)'
+                }}
+              >
+                🎁 Miễn Phí (Không ảnh)
               </button>
             </div>
 
-            {/* Email Render Box */}
-            <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1, textAlign: 'center', background: 'var(--bg)' }}>
-              {/* Mock Subject */}
-              <div style={{
-                textAlign: 'left', marginBottom: '16px', padding: '10px 14px', borderRadius: '8px',
-                background: 'var(--paper)', border: '1px solid var(--line)', fontSize: '13px', color: 'var(--muted)'
-              }}>
-                <strong>Tiêu đề Mail:</strong> {
-                  activePreviewTab === 'paid'
-                    ? emailSubject.replace(/{order_no}/g, 'HK-GoiAnhCuoi-HK889').replace(/{full_name}/g, 'Nguyễn Văn A').replace(/{lookup_code}/g, 'LU9988')
-                    : emailSubject.replace(/{order_no}/g, 'HK-AnhChanDungFree-HK123').replace(/{full_name}/g, 'Trần Thị B').replace(/{lookup_code}/g, 'LU1122')
-                }
-              </div>
+            {/* Email Envelope Header */}
+            {(() => {
+              let previewOrderNo = 'HK-GoiAnhCuoi-HK889';
+              let previewFullName = 'Nguyễn Văn A';
+              let previewLookupCode = 'LU9988';
+              let previewPaymentStatus = 'thanh toán gói ảnh';
+              let previewDriveLink = 'https://drive.google.com/drive/folders/mock-id-paid';
+              let previewDrivePassword = 'kietwedding123';
+              let previewImageSrc = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80';
 
-              {/* Mock HTML Content */}
-              <div dangerouslySetInnerHTML={{
-                __html: activePreviewTab === 'paid' ? renderPreviewHTML({
-                  subject: emailSubject,
-                  body: emailBody,
-                  orderNo: 'HK-GoiAnhCuoi-HK889',
-                  fullName: 'Nguyễn Văn A',
-                  lookupCode: 'LU9988',
-                  paymentStatus: 'thanh toán gói ảnh',
-                  driveLink: 'https://drive.google.com/drive/folders/mock-id-paid',
-                  drivePassword: 'kietwedding123',
-                  previewImageSrc: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80'
-                }) : renderPreviewHTML({
-                  subject: emailSubject,
-                  body: emailBody,
-                  orderNo: 'HK-AnhChanDungFree-HK123',
-                  fullName: 'Trần Thị B',
-                  lookupCode: 'LU1122',
-                  paymentStatus: 'đăng ký gói ảnh miễn phí',
-                  driveLink: 'https://drive.google.com/drive/folders/mock-id-free',
-                  drivePassword: 'Không có',
-                  previewImageSrc: ''
-                })
-              }} />
-            </div>
+              if (activePreviewTab === 'paid_no_img') {
+                previewImageSrc = '';
+              } else if (activePreviewTab === 'free_with_img') {
+                previewOrderNo = 'HK-AnhChanDungFree-HK123';
+                previewFullName = 'Trần Thị B';
+                previewLookupCode = 'LU1122';
+                previewPaymentStatus = 'đăng ký gói ảnh miễn phí';
+                previewDriveLink = 'https://drive.google.com/drive/folders/mock-id-free';
+                previewDrivePassword = 'Không có';
+              } else if (activePreviewTab === 'free_no_img') {
+                previewOrderNo = 'HK-AnhChanDungFree-HK123';
+                previewFullName = 'Trần Thị B';
+                previewLookupCode = 'LU1122';
+                previewPaymentStatus = 'đăng ký gói ảnh miễn phí';
+                previewDriveLink = 'https://drive.google.com/drive/folders/mock-id-free';
+                previewDrivePassword = 'Không có';
+                previewImageSrc = '';
+              }
+
+              const computedSubject = emailSubject
+                .replace(/{order_no}/g, previewOrderNo)
+                .replace(/{full_name}/g, previewFullName)
+                .replace(/{lookup_code}/g, previewLookupCode)
+                .replace(/{payment_status}/g, previewPaymentStatus);
+
+              return (
+                <>
+                  <div style={{ padding: '16px 20px 0' }}>
+                    <div style={{
+                      textAlign: 'left', padding: '16px', borderRadius: '12px',
+                      background: 'var(--paper)', border: '1px solid var(--line)', fontSize: '13px',
+                      display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--ink)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--muted)', width: '80px', display: 'inline-block', flexShrink: 0 }}>Từ:</span>
+                        <span style={{ fontWeight: 'bold' }}>{emailFromName || 'HoangKiet'}</span>
+                        <span style={{ color: 'var(--muted)', marginLeft: '4px' }}>&lt;hoanganhkiet.264@gmail.com&gt;</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--muted)', width: '80px', display: 'inline-block', flexShrink: 0 }}>Tới:</span>
+                        <span>khachhang@gmail.com</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                        <span style={{ color: 'var(--muted)', width: '80px', display: 'inline-block', flexShrink: 0 }}>Tiêu đề:</span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--green-2)' }}>{computedSubject}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Email Render Box */}
+                  <div style={{ padding: '20px', overflowY: 'auto', flex: 1, textAlign: 'center', background: 'var(--bg)' }}>
+                    <div dangerouslySetInnerHTML={{
+                      __html: renderPreviewHTML({
+                        subject: emailSubject,
+                        body: emailBody,
+                        orderNo: previewOrderNo,
+                        fullName: previewFullName,
+                        lookupCode: previewLookupCode,
+                        paymentStatus: previewPaymentStatus,
+                        driveLink: previewDriveLink,
+                        drivePassword: previewDrivePassword,
+                        previewImageSrc: previewImageSrc,
+                        footer: emailFooter
+                      })
+                    }} />
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Footer buttons */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px', borderTop: '1px solid var(--line)' }}>
@@ -635,80 +789,130 @@ export default function WebSettingsPage() {
             </div>
           </section>
 
-          {/* --- EMAIL CONFIGURATION --- */}
-          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: '8px', marginBottom: '4px' }}>
-              <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '17px' }}>✉️ Cấu hình Email gửi khách hàng</h3>
-              <button
-                type="button"
-                className="btn secondary"
-                style={{ padding: '6px 14px', fontSize: '13px', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                onClick={() => setShowPreviewModal(true)}
-              >
-                👁️ Xem mẫu thử
-              </button>
-            </div>
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5' }}>
-              Hãy nhập nội dung thư bằng chữ thường (Text). Hệ thống sẽ <strong>tự động tối ưu hóa giao diện</strong>, bọc email trong khung chuyên nghiệp, căn chỉnh phông chữ, định dạng link tải ảnh đẹp mắt, và tự động xử lý gửi kèm ảnh xem trước cho khách hàng.
-            </p>
+          {/* Divider between General and Email Config */}
+          <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: 0 }} />
 
-            <div>
-              <span className="label" style={{ marginBottom: '8px', display: 'block', color: 'var(--ink)', fontWeight: 'bold' }}>
-                Các từ khóa thay thế tự động (cứ ghi trong tiêu đề mail với nội dung thư là được):
+          {/* --- EMAIL CONFIGURATION --- */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div 
+              onClick={() => setEmailConfigExpanded(!emailConfigExpanded)}
+              style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                borderBottom: '1px solid var(--line)', 
+                paddingBottom: '8px', 
+                marginBottom: '4px',
+                cursor: 'pointer',
+                userSelect: 'none'
+              }}
+            >
+              <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '17px' }}>✉️ Cấu hình Email gửi khách hàng</h3>
+              <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'bold' }}>
+                {emailConfigExpanded ? '▲ Thu gọn' : '▼ Mở rộng để thiết lập'}
               </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {[
-                  { code: '{order_no}', label: 'Mã đơn', color: '#ffab19' },
-                  { code: '{full_name}', label: 'Tên khách', color: '#4c97ff' },
-                  { code: '{lookup_code}', label: 'Mã tra cứu', color: '#5cb1d6' },
-                  { code: '{payment_status}', label: 'Trạng thái phí', color: '#9966ff' },
-                  { code: '{drive_link}', label: 'Link Drive', color: '#ff6680' },
-                  { code: '{drive_password}', label: 'Mật khẩu Drive', color: '#0fbd8c' },
-                  { code: '{preview_image}', label: 'Khung ảnh xem trước', color: '#b66a2c' },
-                ].map(item => (
+            </div>
+
+            {emailConfigExpanded && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'fadeIn 0.2s ease' }}>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                   <button
-                    key={item.code}
                     type="button"
-                    title={`Click để chèn ${item.code}`}
-                    onClick={() => handleInsertKeyword(item.code)}
-                    onMouseDown={e => e.preventDefault()}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '6px 12px',
-                      backgroundColor: item.color,
-                      color: 'white',
-                      borderRadius: '6px',
-                      fontFamily: 'inherit',
-                      fontWeight: 'bold',
-                      fontSize: '12px',
-                      border: 'none',
-                      borderBottom: '3px solid rgba(0,0,0,0.25)',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      transition: 'transform 0.05s'
-                    }}
+                    className="btn secondary"
+                    style={{ padding: '6px 14px', fontSize: '13px', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); setShowPreviewModal(true); }}
                   >
-                    🧩 {item.code} ({item.label})
+                    👁️ Xem mail mẫu
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    style={{ padding: '6px 14px', fontSize: '13px', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: 'var(--red)', borderColor: 'var(--red)' }}
+                    onClick={(e) => { e.stopPropagation(); handleResetEmailTemplate(); }}
+                  >
+                    🔄 Khôi phục mặc định
+                  </button>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5' }}>
+                  Hãy nhập nội dung thư bằng chữ thường (Text). Hệ thống sẽ <strong>tự động tối ưu hóa giao diện</strong>, bọc email trong khung chuyên nghiệp, căn chỉnh phông chữ, định dạng link tải ảnh đẹp mắt, và tự động xử lý gửi kèm ảnh xem trước cho khách hàng.
+                </p>
+
+                <div>
+                  <span className="label" style={{ marginBottom: '8px', display: 'block', color: 'var(--ink)', fontWeight: 'bold' }}>
+                    Các từ khóa thay thế tự động (cứ ghi trong tiêu đề mail với nội dung thư là được):
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {[
+                      { code: '{order_no}', label: 'Mã đơn', color: '#ffab19' },
+                      { code: '{full_name}', label: 'Tên khách', color: '#4c97ff' },
+                      { code: '{lookup_code}', label: 'Mã tra cứu', color: '#5cb1d6' },
+                      { code: '{payment_status}', label: 'Trạng thái phí', color: '#9966ff' },
+                      { code: '{drive_link}', label: 'Link Drive', color: '#ff6680' },
+                      { code: '{drive_password}', label: 'Mật khẩu Drive', color: '#0fbd8c' },
+                      { code: '{preview_image}', label: 'Khung ảnh xem trước', color: '#b66a2c' },
+                    ].map(item => (
+                      <button
+                        key={item.code}
+                        type="button"
+                        title={`Click để chèn ${item.code}`}
+                        onClick={() => handleInsertKeyword(item.code)}
+                        onMouseDown={e => e.preventDefault()}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '6px 12px',
+                          backgroundColor: item.color,
+                          color: 'white',
+                          borderRadius: '6px',
+                          fontFamily: 'inherit',
+                          fontWeight: 'bold',
+                          fontSize: '12px',
+                          border: 'none',
+                          borderBottom: '3px solid rgba(0,0,0,0.25)',
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          transition: 'transform 0.05s'
+                        }}
+                      >
+                        🧩 {item.code} ({item.label})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+     
+                <div>
+                  <label htmlFor="ws-email-from-name" className="label">Tên hiển thị người gửi (FROM Name)</label>
+                  <input id="ws-email-from-name" name="email_from_name" type="text" placeholder="Ví dụ: HoangKiet" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                    value={emailFromName} onChange={e => { setEmailFromName(e.target.value); markDirty(); }}
+                    onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
+                </div>
+
+                <div>
+                  <label htmlFor="ws-email-subject" className="label">Tiêu đề Email</label>
+                  <input id="ws-email-subject" name="email_subject" type="text" placeholder="Ví dụ: [HoangKiet] Cập nhật thông tin đơn hàng {order_no}" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                    value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }}
+                    onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
+                </div>
+     
+                <div>
+                  <label htmlFor="ws-email-body" className="label">Nội dung thư (Chữ thường)</label>
+                  <textarea id="ws-email-body" name="email_body" placeholder="Nhập nội dung thư gửi khách..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
+                    value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }}
+                    onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
+                </div>
+
+                <div>
+                  <label htmlFor="ws-email-footer" className="label">Chữ ký / Chân trang Email (Footer)</label>
+                  <textarea id="ws-email-footer" name="email_footer" placeholder="Ví dụ: Đây là email tự động gửi từ hệ thống HoangKiet Photography..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '80px', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
+                    value={emailFooter} onChange={e => { setEmailFooter(e.target.value); markDirty(); }}
+                    onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
+                </div>
               </div>
-            </div>
- 
-            <div>
-              <label htmlFor="ws-email-subject" className="label">Tiêu đề Email</label>
-              <input id="ws-email-subject" name="email_subject" type="text" placeholder="Ví dụ: [HoangKiet] Cập nhật thông tin đơn hàng {order_no}" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }}
-                onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
-            </div>
- 
-            <div>
-              <label htmlFor="ws-email-body" className="label">Nội dung thư (Chữ thường)</label>
-              <textarea id="ws-email-body" name="email_body" placeholder="Nhập nội dung thư gửi khách..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
-                value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }}
-                onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
-            </div>
+            )}
           </section>
+
+          {/* Divider between Email Config and Portfolio Slides */}
+          <hr style={{ border: 'none', borderTop: '1px solid var(--line)', margin: 0 }} />
 
           {/* --- PORTFOLIO SLIDES --- */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
@@ -721,16 +925,118 @@ export default function WebSettingsPage() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {slides.map((slide, index) => (
-                <SlideEditor key={index} slide={slide} index={index} onChange={handleSlideChange} onRemove={handleRemoveSlide} />
-              ))}
-              {slides.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', border: '1px dashed var(--line)', borderRadius: '8px' }}>
-                  Chưa có ảnh nào trong danh sách. Hãy nhấn nút "+ Thêm ảnh" ở trên.
+            {slides.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)', border: '1px dashed var(--line)', borderRadius: '8px' }}>
+                Chưa có ảnh nào trong danh sách. Hãy nhấn nút "+ Thêm ảnh" ở trên.
+              </div>
+            ) : (() => {
+              const PAGE_SIZE = 5;
+              const totalPages = Math.max(1, Math.ceil(slides.length / PAGE_SIZE));
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div 
+                    ref={sliderContainerRef}
+                    onMouseDown={handleDragStart}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                    onTouchStart={handleDragStart}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                    style={{
+                      overflow: 'hidden',
+                      width: '100%',
+                      position: 'relative',
+                      cursor: isDragging ? 'grabbing' : 'default',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      width: `${totalPages * 100}%`,
+                      transform: `translateX(-${((currentPage + dragOffset) / totalPages) * 100}%)`,
+                      transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)',
+                    }}>
+                      {Array.from({ length: totalPages }).map((_, pageIdx) => {
+                        const pageSlides = slides.slice(pageIdx * PAGE_SIZE, (pageIdx + 1) * PAGE_SIZE);
+                        return (
+                          <div 
+                            key={pageIdx} 
+                            style={{
+                              width: `${100 / totalPages}%`,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '16px',
+                              padding: '4px',
+                              flexShrink: 0
+                            }}
+                          >
+                            {pageSlides.map((slide, localIdx) => {
+                              const globalIdx = pageIdx * PAGE_SIZE + localIdx;
+                              return (
+                                <SlideEditor
+                                  key={globalIdx}
+                                  slide={slide}
+                                  index={globalIdx}
+                                  onChange={handleSlideChange}
+                                  onRemove={handleRemoveSlide}
+                                />
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                      <button
+                        type="button"
+                        disabled={currentPage === 0}
+                        className="btn secondary"
+                        style={{ padding: '6px 14px', minHeight: 'auto', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', opacity: currentPage === 0 ? 0.4 : 1 }}
+                        onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                      >
+                        ◀ Trang trước
+                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {Array.from({ length: totalPages }).map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '50%',
+                              padding: 0,
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: currentPage === i ? 'var(--green-2)' : 'var(--line)',
+                              transform: currentPage === i ? 'scale(1.2)' : 'scale(1)',
+                              transition: 'all 0.2s'
+                            }}
+                            onClick={() => setCurrentPage(i)}
+                            title={`Trang ${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={currentPage === totalPages - 1}
+                        className="btn secondary"
+                        style={{ padding: '6px 14px', minHeight: 'auto', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', opacity: currentPage === totalPages - 1 ? 0.4 : 1 }}
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                      >
+                        Trang sau ▶
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </section>
 
           {/* --- ACTIONS --- */}

@@ -40,9 +40,19 @@ async function sendEmail({ to, subject, text, html, attachments }) {
     return { mock: true, messageId: 'mock-id-' + Date.now() };
   }
 
+  let fromName = process.env.SMTP_FROM_NAME || 'HoangKiet';
+  try {
+    const fromNameRes = await query("SELECT value FROM web_settings WHERE key = 'email_from_name'");
+    if (fromNameRes.rows.length > 0 && fromNameRes.rows[0].value && fromNameRes.rows[0].value.trim()) {
+      fromName = fromNameRes.rows[0].value.trim();
+    }
+  } catch (e) {
+    console.error('Lỗi khi lấy cấu hình tên người gửi email:', e.message);
+  }
+
   try {
     const info = await transporter.sendMail({
-      from: `"${process.env.SMTP_FROM_NAME || 'Hệ thống Quản lý Ảnh'}" <${user}>`,
+      from: `"${fromName}" <${user}>`,
       to,
       subject,
       text,

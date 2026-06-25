@@ -26,6 +26,7 @@ async function getEmailContent(lookup, order, newDriveLink, newDrivePassword, ne
   // Get from db or default
   const subjectRes = await query("SELECT value FROM web_settings WHERE key = 'email_subject'");
   const bodyRes = await query("SELECT value FROM web_settings WHERE key = 'email_body'");
+  const footerRes = await query("SELECT value FROM web_settings WHERE key = 'email_footer'");
 
   let subjectTpl = (subjectRes.rows.length > 0) ? subjectRes.rows[0].value : '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}';
   let bodyTpl = (bodyRes.rows.length > 0) ? bodyRes.rows[0].value : `Xin chào {full_name} với mã tra cứu {lookup_code},
@@ -42,6 +43,8 @@ Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm 
 
 Trân trọng,
 Ban quản trị HoangKiet`;
+  let footerTpl = (footerRes.rows.length > 0) ? footerRes.rows[0].value : 'Đây là email tự động gửi từ hệ thống HoangKiet Photography.\nVui lòng không trả lời trực tiếp email này.';
+  const formattedFooter = footerTpl.replace(/\r?\n/g, '<br/>');
 
   // Process subject
   const subject = subjectTpl
@@ -129,7 +132,7 @@ Ban quản trị HoangKiet`;
     ${contentHtml}
   </div>
   <div style="margin-top: 28px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center;">
-    Đây là email tự động gửi từ hệ thống <strong>HoangKiet Photography</strong>.<br/>Vui lòng không trả lời trực tiếp email này.
+    ${formattedFooter}
   </div>
 </div>`;
 

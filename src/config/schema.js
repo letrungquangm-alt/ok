@@ -232,6 +232,8 @@ async function initDb() {
     { key: 'phone', value: '0703.01.2959' },
     { key: 'facetime', value: '0703.01.2959 (Audio Only)' },
     { key: 'email_subject', value: '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}' },
+    { key: 'email_from_name', value: 'HoangKiet' },
+    { key: 'email_footer', value: 'Đây là email tự động gửi từ hệ thống HoangKiet Photography.\nVui lòng không trả lời trực tiếp email này.' },
     { key: 'email_body', value: `Xin chào {full_name} với mã tra cứu {lookup_code},
 
 Chúng tôi đã nhận được thông tin {payment_status} của bạn và đơn hàng {order_no} đã hoàn thành!
