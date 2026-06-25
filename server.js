@@ -19,15 +19,18 @@ app.use(express.json({ limit: '50mb' }));
 
 // Security headers
 app.use((req, res, next) => {
-  // Replace X-Frame-Options with CSP frame-ancestors (stronger, more consistent)
-  res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
-  // Remove deprecated X-XSS-Protection (can cause vulnerabilities)
+  // Remove deprecated X-XSS-Protection header
   res.removeHeader('X-XSS-Protection');
-  // Use Cache-Control instead of Expires
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.removeHeader('Expires');
-  // Ensure proper charset for API responses
-  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // Only apply HTML-specific security headers to non-API routes
+  if (!req.path.startsWith('/api')) {
+    // Use CSP frame-ancestors instead of X-Frame-Options
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+    // Prevent MIME sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+
   next();
 });
 
