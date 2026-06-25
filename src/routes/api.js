@@ -75,11 +75,15 @@ Ban quản trị HoangKiet`;
     }
   }
 
-  // Format links & password replacements
+  // Format links & replacements with Scratch block colors
+  const orderNoHtml = `<span style="background-color: #ffab19; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${orderNoText}</span>`;
+  const fullNameHtml = `<span style="background-color: #4c97ff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${lookup.full_name}</span>`;
+  const lookupCodeHtml = `<span style="background-color: #5cb1d6; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${lookup.code}</span>`;
+  const paymentStatusHtml = `<span style="background-color: #9966ff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${paymentStatus}</span>`;
   const driveLinkHtml = driveLink 
-    ? `<a href="${driveLink}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a>`
+    ? `<a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="background-color: #ff6680; color: white; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); text-decoration: none; display: inline-block; margin: 0 2px;">lấy ảnh ở Drive</a>`
     : 'Chưa cung cấp';
-  const drivePasswordHtml = `<code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px; font-family: monospace;">${drivePassword}</code>`;
+  const drivePasswordHtml = `<code style="background-color: #0fbd8c; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px; font-family: monospace;">${drivePassword}</code>`;
 
   // Parse paragraphs from plain text template
   const paragraphs = bodyTpl
@@ -96,10 +100,10 @@ Ban quản trị HoangKiet`;
 
     // Replace place holders in this paragraph
     let pContent = p
-      .replace(/{order_no}/g, `<strong>${orderNoText}</strong>`)
-      .replace(/{full_name}/g, `<strong>${lookup.full_name}</strong>`)
-      .replace(/{lookup_code}/g, `<strong>${lookup.code}</strong>`)
-      .replace(/{payment_status}/g, `<strong>${paymentStatus}</strong>`)
+      .replace(/{order_no}/g, orderNoHtml)
+      .replace(/{full_name}/g, fullNameHtml)
+      .replace(/{lookup_code}/g, lookupCodeHtml)
+      .replace(/{payment_status}/g, paymentStatusHtml)
       .replace(/{drive_link}/g, driveLinkHtml)
       .replace(/{drive_password}/g, drivePasswordHtml);
 

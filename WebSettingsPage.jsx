@@ -5,10 +5,15 @@ import api from './api';
 
 // Helper to render plain text email template into beautiful HTML preview
 function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, paymentStatus, driveLink, drivePassword, previewImageSrc }) {
+  // Format links & replacements with Scratch block colors
+  const orderNoHtml = `<span style="background-color: #ffab19; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${orderNo}</span>`;
+  const fullNameHtml = `<span style="background-color: #4c97ff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${fullName}</span>`;
+  const lookupCodeHtml = `<span style="background-color: #5cb1d6; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${lookupCode}</span>`;
+  const paymentStatusHtml = `<span style="background-color: #9966ff; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px;">${paymentStatus}</span>`;
   const driveLinkHtml = driveLink 
-    ? `<a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a>`
+    ? `<a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="background-color: #ff6680; color: white; padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); text-decoration: none; display: inline-block; margin: 0 2px;">lấy ảnh ở Drive</a>`
     : 'Chưa cung cấp';
-  const drivePasswordHtml = `<code style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fff;">${drivePassword}</code>`;
+  const drivePasswordHtml = `<code style="background-color: #0fbd8c; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 13px; border-bottom: 2px solid rgba(0,0,0,0.15); display: inline-block; margin: 0 2px; font-family: monospace;">${drivePassword}</code>`;
 
   let previewHtml = '';
   if (previewImageSrc) {
@@ -27,10 +32,10 @@ function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, payme
     }
 
     let pContent = p
-      .replace(/{order_no}/g, `<strong>${orderNo}</strong>`)
-      .replace(/{full_name}/g, `<strong>${fullName}</strong>`)
-      .replace(/{lookup_code}/g, `<strong>${lookupCode}</strong>`)
-      .replace(/{payment_status}/g, `<strong>${paymentStatus}</strong>`)
+      .replace(/{order_no}/g, orderNoHtml)
+      .replace(/{full_name}/g, fullNameHtml)
+      .replace(/{lookup_code}/g, lookupCodeHtml)
+      .replace(/{payment_status}/g, paymentStatusHtml)
       .replace(/{drive_link}/g, driveLinkHtml)
       .replace(/{drive_password}/g, drivePasswordHtml);
 
