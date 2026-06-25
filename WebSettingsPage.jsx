@@ -1470,6 +1470,9 @@ export default function WebSettingsPage() {
               {fontEditMode === 'sync' && (
                 <div style={{ padding: '20px', border: '1px dashed var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--blue)' }}>🔗 Tích chọn các phông chữ muốn tự động đồng bộ theo phông chữ Giao diện Web:</span>
+                  <p style={{ margin: '0', fontSize: '12.5px', color: '#aaaaaa', lineHeight: '1.45' }}>
+                    💡 <strong>Nguyên lý hoạt động:</strong> Phông chữ được lấy làm <strong>gốc / chuẩn</strong> là <strong>"Font chữ giao diện Website (Phông chữ nền)"</strong> (luôn hiển thị ở khung đầu tiên phía trên). Khi bạn thay đổi phông chữ giao diện chính đó, tất cả phông chữ con được chọn đồng bộ bên dưới sẽ tự động cập nhật theo.
+                  </p>
                   
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', margin: 0 }}>
                     <input 
