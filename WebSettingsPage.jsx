@@ -3,6 +3,63 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import api from './api';
 
+// Helper to render plain text email template into beautiful HTML preview
+function renderPreviewHTML({ subject, body, orderNo, fullName, lookupCode, paymentStatus, driveLink, drivePassword, previewImageSrc }) {
+  const driveLinkHtml = driveLink 
+    ? `<a href="${driveLink}" target="_blank" rel="noopener noreferrer" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a>`
+    : 'Chưa cung cấp';
+  const drivePasswordHtml = `<code style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fff;">${drivePassword}</code>`;
+
+  let previewHtml = '';
+  if (previewImageSrc) {
+    previewHtml = `<div style="margin: 20px 0;"><h3 style="font-size: 15px; margin: 0 0 10px 0; color: #fff;">Ảnh xem trước của bạn:</h3><img src="${previewImageSrc}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+  }
+
+  const paragraphs = body
+    .split(/\r?\n/)
+    .map(p => p.trim());
+
+  let contentHtml = '';
+  paragraphs.forEach(p => {
+    if (p.length === 0) {
+      contentHtml += `<div style="height: 10px;"></div>`;
+      return;
+    }
+
+    let pContent = p
+      .replace(/{order_no}/g, `<strong>${orderNo}</strong>`)
+      .replace(/{full_name}/g, `<strong>${fullName}</strong>`)
+      .replace(/{lookup_code}/g, `<strong>${lookupCode}</strong>`)
+      .replace(/{payment_status}/g, `<strong>${paymentStatus}</strong>`)
+      .replace(/{drive_link}/g, driveLinkHtml)
+      .replace(/{drive_password}/g, drivePasswordHtml);
+
+    if (p.includes('{preview_image}')) {
+      contentHtml += pContent.replace(/{preview_image}/g, previewHtml);
+    } else {
+      contentHtml += `<p style="margin: 0 0 8px 0; font-size: 14px;">${pContent}</p>`;
+    }
+  });
+
+  if (!body.includes('{preview_image}') && previewHtml !== '') {
+    contentHtml += previewHtml;
+  }
+
+  return `
+    <div style="font-family: sans-serif; line-height: 1.6; color: #f8fafc; background: #121614; border: 1px solid #1c221e; border-radius: 12px; padding: 20px; text-align: left; max-width: 600px; margin: 0 auto;">
+      <div style="border-bottom: 2px solid #176b52; padding-bottom: 12px; margin-bottom: 16px;">
+        <h4 style="margin: 0; color: #10b981; font-size: 16px; text-transform: uppercase;">Cập nhật trạng thái đơn hàng</h4>
+      </div>
+      <div style="font-size: 14px;">
+        ${contentHtml}
+      </div>
+      <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #1c221e; font-size: 11px; color: #94a3b8; text-align: center;">
+        Đây là email tự động gửi từ hệ thống HoangKiet Photography.<br/>Vui lòng không trả lời trực tiếp email này.
+      </div>
+    </div>
+  `;
+}
+
 // ─── UnsavedModal component ──────────────────────────────────────────────────
 function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
   return (
@@ -201,6 +258,9 @@ export default function WebSettingsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [activePreviewTab, setActivePreviewTab] = useState('paid');
+  const lastFocusedInput = useRef(null);
 
   // Track whether form has unsaved changes
   const [isDirty, setIsDirty] = useState(false);
@@ -240,6 +300,32 @@ export default function WebSettingsPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
+
+  const handleInsertKeyword = (keyword) => {
+    const input = lastFocusedInput.current;
+    const fallbackEl = document.getElementById('ws-email-body');
+    const targetInput = input || fallbackEl;
+
+    if (!targetInput) return;
+
+    const start = targetInput.selectionStart;
+    const end = targetInput.selectionEnd;
+    const val = targetInput.value;
+    const newVal = val.slice(0, start) + keyword + val.slice(end);
+
+    if (targetInput.id === 'ws-email-subject') {
+      setEmailSubject(newVal);
+      markDirty();
+    } else {
+      setEmailBody(newVal);
+      markDirty();
+    }
+
+    setTimeout(() => {
+      targetInput.focus();
+      targetInput.setSelectionRange(start + keyword.length, start + keyword.length);
+    }, 0);
+  };
 
   const fetchSettings = async () => {
     try {
@@ -373,6 +459,108 @@ export default function WebSettingsPage() {
         />
       , document.body)}
 
+      {/* Email Preview Modal */}
+      {showPreviewModal && createPortal(
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(5px)', WebkitBackdropFilter: 'blur(5px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: 'var(--paper)', border: '1px solid var(--line)',
+            borderRadius: '16px', width: '100%', maxWidth: '720px', maxHeight: '90vh',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            animation: 'slideUp 0.25s ease'
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', borderBottom: '1px solid var(--line)' }}>
+              <h3 style={{ margin: 0, color: 'var(--green-2)' }}>👀 Xem thử giao diện Email mẫu</h3>
+              <button
+                type="button"
+                className="btn ghost"
+                style={{ border: 'none', padding: '4px 8px', minHeight: 'auto', color: 'var(--muted)', fontSize: '18px', cursor: 'pointer' }}
+                onClick={() => setShowPreviewModal(false)}
+              >✕</button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div style={{ display: 'flex', gap: '8px', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'rgba(255,255,255,0.01)' }}>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('paid')}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
+                  fontWeight: 'bold', fontSize: '13px',
+                  background: activePreviewTab === 'paid' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'paid' ? '#fff' : 'var(--muted)'
+                }}
+              >
+                💵 Mẫu 1: Gói Trả Phí (Có ảnh)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('free')}
+                style={{
+                  padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--line)', cursor: 'pointer',
+                  fontWeight: 'bold', fontSize: '13px',
+                  background: activePreviewTab === 'free' ? 'var(--green-2)' : 'transparent',
+                  color: activePreviewTab === 'free' ? '#fff' : 'var(--muted)'
+                }}
+              >
+                🎁 Mẫu 2: Gói Miễn Phí (Không ảnh)
+              </button>
+            </div>
+
+            {/* Email Render Box */}
+            <div style={{ padding: '24px 20px', overflowY: 'auto', flex: 1, textAlign: 'center', background: 'var(--bg)' }}>
+              {/* Mock Subject */}
+              <div style={{
+                textAlign: 'left', marginBottom: '16px', padding: '10px 14px', borderRadius: '8px',
+                background: 'var(--paper)', border: '1px solid var(--line)', fontSize: '13px', color: 'var(--muted)'
+              }}>
+                <strong>Tiêu đề Mail:</strong> {
+                  activePreviewTab === 'paid'
+                    ? emailSubject.replace(/{order_no}/g, 'HK-GoiAnhCuoi-HK889').replace(/{full_name}/g, 'Nguyễn Văn A').replace(/{lookup_code}/g, 'LU9988')
+                    : emailSubject.replace(/{order_no}/g, 'HK-AnhChanDungFree-HK123').replace(/{full_name}/g, 'Trần Thị B').replace(/{lookup_code}/g, 'LU1122')
+                }
+              </div>
+
+              {/* Mock HTML Content */}
+              <div dangerouslySetInnerHTML={{
+                __html: activePreviewTab === 'paid' ? renderPreviewHTML({
+                  subject: emailSubject,
+                  body: emailBody,
+                  orderNo: 'HK-GoiAnhCuoi-HK889',
+                  fullName: 'Nguyễn Văn A',
+                  lookupCode: 'LU9988',
+                  paymentStatus: 'thanh toán gói ảnh',
+                  driveLink: 'https://drive.google.com/drive/folders/mock-id-paid',
+                  drivePassword: 'kietwedding123',
+                  previewImageSrc: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80'
+                }) : renderPreviewHTML({
+                  subject: emailSubject,
+                  body: emailBody,
+                  orderNo: 'HK-AnhChanDungFree-HK123',
+                  fullName: 'Trần Thị B',
+                  lookupCode: 'LU1122',
+                  paymentStatus: 'đăng ký gói ảnh miễn phí',
+                  driveLink: 'https://drive.google.com/drive/folders/mock-id-free',
+                  drivePassword: 'Không có',
+                  previewImageSrc: ''
+                })
+              }} />
+            </div>
+
+            {/* Footer buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '16px 20px', borderTop: '1px solid var(--line)' }}>
+              <button type="button" className="btn secondary" style={{ minHeight: 'auto', padding: '8px 20px', cursor: 'pointer' }} onClick={() => setShowPreviewModal(false)}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
       <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <form onSubmit={handleSave} className="panel page-transition" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px' }}>
@@ -444,32 +632,76 @@ export default function WebSettingsPage() {
 
           {/* --- EMAIL CONFIGURATION --- */}
           <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
-            <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>✉️ Cấu hình Email gửi khách hàng</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--line)', paddingBottom: '8px', marginBottom: '4px' }}>
+              <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '17px' }}>✉️ Cấu hình Email gửi khách hàng</h3>
+              <button
+                type="button"
+                className="btn secondary"
+                style={{ padding: '6px 14px', fontSize: '13px', minHeight: 'auto', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                onClick={() => setShowPreviewModal(true)}
+              >
+                👁️ Xem mẫu thử
+              </button>
+            </div>
             <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5' }}>
               Hãy nhập nội dung thư bằng chữ thường (Text). Hệ thống sẽ <strong>tự động tối ưu hóa giao diện</strong>, bọc email trong khung chuyên nghiệp, căn chỉnh phông chữ, định dạng link tải ảnh đẹp mắt, và tự động xử lý gửi kèm ảnh xem trước cho khách hàng.
-              <br /><br />
-              <strong>Các từ khóa thay thế tự động (hãy đặt trong thư của bạn):</strong>
-              <br />
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{order_no}'}</code> (Mã đơn)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{full_name}'}</code> (Tên khách)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{lookup_code}'}</code> (Mã tra cứu)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{payment_status}'}</code> (Trạng thái phí)
-              <br />
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_link}'}</code> (Link tải Drive)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_password}'}</code> (Mật khẩu Drive)
-              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>{'{preview_image}'}</code> (Nơi hiển thị ảnh xem trước - tự động ẩn nếu không tải lên)
             </p>
+
+            <div>
+              <span className="label" style={{ marginBottom: '8px', display: 'block', color: 'var(--ink)', fontWeight: 'bold' }}>
+                Các từ khóa thay thế tự động (cứ ghi trong tiêu đề mail với nội dung thư là được):
+              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {[
+                  { code: '{order_no}', label: 'Mã đơn', color: '#ffab19' },
+                  { code: '{full_name}', label: 'Tên khách', color: '#4c97ff' },
+                  { code: '{lookup_code}', label: 'Mã tra cứu', color: '#5cb1d6' },
+                  { code: '{payment_status}', label: 'Trạng thái phí', color: '#9966ff' },
+                  { code: '{drive_link}', label: 'Link Drive', color: '#ff6680' },
+                  { code: '{drive_password}', label: 'Mật khẩu Drive', color: '#0fbd8c' },
+                  { code: '{preview_image}', label: 'Khung ảnh xem trước', color: '#b66a2c' },
+                ].map(item => (
+                  <button
+                    key={item.code}
+                    type="button"
+                    title={`Click để chèn ${item.code}`}
+                    onClick={() => handleInsertKeyword(item.code)}
+                    onMouseDown={e => e.preventDefault()}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '6px 12px',
+                      backgroundColor: item.color,
+                      color: 'white',
+                      borderRadius: '6px',
+                      fontFamily: 'inherit',
+                      fontWeight: 'bold',
+                      fontSize: '12px',
+                      border: 'none',
+                      borderBottom: '3px solid rgba(0,0,0,0.25)',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      transition: 'transform 0.05s'
+                    }}
+                  >
+                    🧩 {item.code} ({item.label})
+                  </button>
+                ))}
+              </div>
+            </div>
  
             <div>
               <label htmlFor="ws-email-subject" className="label">Tiêu đề Email</label>
               <input id="ws-email-subject" name="email_subject" type="text" placeholder="Ví dụ: [HoangKiet] Cập nhật thông tin đơn hàng {order_no}" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }} required />
+                value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }}
+                onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
             </div>
  
             <div>
               <label htmlFor="ws-email-body" className="label">Nội dung thư (Chữ thường)</label>
               <textarea id="ws-email-body" name="email_body" placeholder="Nhập nội dung thư gửi khách..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'inherit', fontSize: '14px', lineHeight: '1.6' }}
-                value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }} required />
+                value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }}
+                onFocus={(e) => { lastFocusedInput.current = e.target; }} required />
             </div>
           </section>
 
