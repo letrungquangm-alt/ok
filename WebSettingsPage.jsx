@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useBlocker } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from './api';
 
 // ─── UnsavedModal component ──────────────────────────────────────────────────
@@ -180,6 +180,7 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function WebSettingsPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
@@ -194,15 +195,30 @@ export default function WebSettingsPage() {
 
   // Track whether form has unsaved changes
   const [isDirty, setIsDirty] = useState(false);
-  // Store original (saved) values to compare
+  const [showModal, setShowModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState(null);
   const savedRef = useRef(null);
+  const isDirtyRef = useRef(false);
 
-  // Block in-app navigation when dirty
-  const blocker = useBlocker(
-    useCallback(({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
-    [isDirty])
-  );
+  // Keep ref in sync with state (for use inside event listeners)
+  useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
+
+  // Intercept internal SPA link clicks when there are unsaved changes
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (!isDirtyRef.current) return;
+      const anchor = e.target.closest('a[href]');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('http') || href.startsWith('//') || href.startsWith('mailto:') || href.startsWith('#')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingPath(href);
+      setShowModal(true);
+    };
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, []);
 
   // Warn before browser close/refresh
   useEffect(() => {
@@ -298,21 +314,26 @@ export default function WebSettingsPage() {
     await doSave();
   };
 
-  // Modal: Save then proceed navigation
+  // Modal: Save then navigate away
   const handleModalSave = async () => {
     const ok = await doSave();
-    if (ok && blocker.proceed) blocker.proceed();
+    if (ok && pendingPath) {
+      setShowModal(false);
+      navigate(pendingPath);
+    }
   };
 
-  // Modal: Discard changes then proceed navigation
+  // Modal: Discard changes then navigate away
   const handleModalDiscard = () => {
     setIsDirty(false);
-    if (blocker.proceed) blocker.proceed();
+    setShowModal(false);
+    if (pendingPath) navigate(pendingPath);
   };
 
   // Modal: Cancel — stay on page
   const handleModalCancel = () => {
-    if (blocker.reset) blocker.reset();
+    setPendingPath(null);
+    setShowModal(false);
   };
 
   if (loading) return <div style={{ padding: '20px' }}>Đang tải cấu hình website...</div>;
@@ -320,7 +341,7 @@ export default function WebSettingsPage() {
   return (
     <>
       {/* Unsaved changes modal */}
-      {blocker.state === 'blocked' && (
+      {showModal && (
         <UnsavedModal
           onSave={handleModalSave}
           onDiscard={handleModalDiscard}
