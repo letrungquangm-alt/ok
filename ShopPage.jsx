@@ -128,7 +128,7 @@ export default function ShopPage({ viewType = 'search' }) {
       window.dispatchEvent(new Event('lookup_change'));
       
       if (viewType === 'search') {
-        navigate('/result');
+        navigate('/tracuu');
       }
     } catch (err) {
       setSearchError(err.response?.data?.error || 'Mã tra cứu không tồn tại hoặc đã có lỗi xảy ra.');
@@ -438,7 +438,7 @@ export default function ShopPage({ viewType = 'search' }) {
                             transition: 'all 0.2s ease'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div className="order-card-header">
                             <div>
                               <h4 style={{ margin: '0 0 4px 0', fontSize: '16px', color: 'var(--ink)' }}>
                                 Gói sản phẩm: <span style={{ color: 'var(--muted)' }}>{order.order_no}</span>
@@ -1058,6 +1058,19 @@ export default function ShopPage({ viewType = 'search' }) {
         @media (min-width: 820px) {
           .lookup-grid {
             grid-template-columns: 360px 1fr;
+          }
+        }
+        .order-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+        }
+        @media (max-width: 600px) {
+          .order-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
           }
         }
         .order-card-clickable:hover {

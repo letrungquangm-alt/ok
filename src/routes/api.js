@@ -361,6 +361,26 @@ router.get('/public-config', (req, res) => {
   });
 });
 
+// GET /api/web-settings - Lấy thông tin cấu hình website trang chủ
+router.get('/web-settings', async (req, res, next) => {
+  try {
+    const result = await query('SELECT key, value FROM web_settings');
+    const settings = {};
+    result.rows.forEach(row => {
+      let val = row.value;
+      if (row.key === 'slides') {
+        try {
+          val = JSON.parse(row.value);
+        } catch (e) {}
+      }
+      settings[row.key] = val;
+    });
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/sepay/webhook', async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -1177,25 +1197,6 @@ router.post('/orders/batch-delete', requireRole('ADMIN', 'QUANLY', 'NHANVIEN'), 
   } catch (error) { next(error); }
 });
 
-// GET /api/web-settings - Lấy thông tin cấu hình website trang chủ
-router.get('/web-settings', async (req, res, next) => {
-  try {
-    const result = await query('SELECT key, value FROM web_settings');
-    const settings = {};
-    result.rows.forEach(row => {
-      let val = row.value;
-      if (row.key === 'slides') {
-        try {
-          val = JSON.parse(row.value);
-        } catch (e) {}
-      }
-      settings[row.key] = val;
-    });
-    res.json(settings);
-  } catch (error) {
-    next(error);
-  }
-});
 
 // PUT /api/web-settings - Cập nhật cấu hình website trang chủ
 router.put('/web-settings', requireRole('ADMIN', 'QUANLY'), async (req, res, next) => {

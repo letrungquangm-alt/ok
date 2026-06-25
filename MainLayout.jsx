@@ -10,9 +10,9 @@ export default function MainLayout() {
   const token = localStorage.getItem('token');
   const user = userStr && token ? JSON.parse(userStr) : null;
 
-  const publicPaths = ['/', '/tracuugoianh', '/result', '/cart'];
+  const publicPaths = ['/', '/tracuugoianh', '/tracuu', '/cart'];
   const isPublicPath = publicPaths.includes(location.pathname);
-  const isClientPage = ['/', '/tracuugoianh', '/result', '/cart', '/my-orders'].includes(location.pathname);
+  const isClientPage = ['/', '/tracuugoianh', '/tracuu', '/cart', '/my-orders'].includes(location.pathname);
 
   const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
   const [pendingEmailCount, setPendingEmailCount] = useState(0);
@@ -61,8 +61,8 @@ export default function MainLayout() {
 
   const getBottomNavLinkStyle = (path) => {
     let isActive = false;
-    if (path === '/tracuugoianh' || path === '/result') {
-      isActive = location.pathname === '/tracuugoianh' || location.pathname === '/result';
+    if (path === '/tracuugoianh' || path === '/tracuu') {
+      isActive = location.pathname === '/tracuugoianh' || location.pathname === '/tracuu';
     } else {
       isActive = location.pathname === path;
     }
@@ -582,8 +582,8 @@ export default function MainLayout() {
 
           {/* TRA CỨU */}
           <Link 
-            to={activeLookupCode ? "/result" : "/tracuugoianh"} 
-            className={`nav-item ${(location.pathname === '/tracuugoianh' || location.pathname === '/result') ? 'active' : ''}`}
+            to={activeLookupCode ? "/tracuu" : "/tracuugoianh"} 
+            className={`nav-item ${(location.pathname === '/tracuugoianh' || location.pathname === '/tracuu') ? 'active' : ''}`}
           >
             <span className="dot" style={{background: 'var(--blue)'}}></span>
             <span>Tra cứu</span>

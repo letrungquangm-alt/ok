@@ -310,7 +310,7 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/tracuugoianh" element={<ShopPage viewType="search" />} />
-        <Route path="/result" element={<ShopPage viewType="result" />} />
+        <Route path="/tracuu" element={<ShopPage viewType="result" />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/my-orders" element={<MyOrdersPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />

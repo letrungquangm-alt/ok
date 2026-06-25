@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import api from './api';
 
 // ─── UnsavedModal component ──────────────────────────────────────────────────
@@ -347,14 +348,14 @@ export default function WebSettingsPage() {
   return (
     <>
       {/* Unsaved changes modal */}
-      {showModal && (
+      {showModal && createPortal(
         <UnsavedModal
           onSave={handleModalSave}
           onDiscard={handleModalDiscard}
           onCancel={handleModalCancel}
           saving={saving}
         />
-      )}
+      , document.body)}
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <form onSubmit={handleSave} className="panel page-transition" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
