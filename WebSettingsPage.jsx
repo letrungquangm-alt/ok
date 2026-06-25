@@ -509,7 +509,16 @@ export default function WebSettingsPage() {
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
-        setAnnouncement(data.announcement);
+        if (data.announcement) {
+          try {
+            const parsed = JSON.parse(data.announcement);
+            setAnnouncements(Array.isArray(parsed) ? parsed.filter(Boolean) : [data.announcement]);
+          } catch (e) {
+            setAnnouncements([data.announcement]);
+          }
+        } else {
+          setAnnouncements(['']);
+        }
         setPhone(data.phone);
         setFacetime(data.facetime);
         setEmailFromName(data.email_from_name);
@@ -646,7 +655,7 @@ export default function WebSettingsPage() {
         display_name: displayName,
         sub_heading: subHeading,
         description,
-        announcement,
+        announcement: JSON.stringify(announcements.filter(val => val && val.trim() !== '')),
         phone,
         facetime,
         email_from_name: emailFromName,
@@ -704,7 +713,16 @@ export default function WebSettingsPage() {
       setDisplayName(data.display_name || '');
       setSubHeading(data.sub_heading || '');
       setDescription(data.description || '');
-      setAnnouncement(data.announcement || '');
+      if (data.announcement) {
+        try {
+          const parsed = JSON.parse(data.announcement);
+          setAnnouncements(Array.isArray(parsed) ? parsed.filter(Boolean) : [data.announcement]);
+        } catch (e) {
+          setAnnouncements([data.announcement]);
+        }
+      } else {
+        setAnnouncements(['']);
+      }
       setPhone(data.phone || '');
       setFacetime(data.facetime || '');
       setEmailFromName(data.email_from_name || '');
