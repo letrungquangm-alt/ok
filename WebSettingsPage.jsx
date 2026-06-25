@@ -130,13 +130,12 @@ function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
 
 // ─── SlideEditor component ──────────────────────────────────────────────────
 function SlideEditor({ slide, index, onChange, onRemove }) {
-  const isBase64 = slide.image && slide.image.startsWith('data:');
-  const [mode, setMode] = useState(isBase64 ? 'upload' : 'link');
+  const mode = slide.mode || 'link';
 
   const switchMode = (newMode) => {
     if (newMode === mode) return;
-    setMode(newMode);
-    onChange(index, 'image', '');
+    onChange(index, 'mode', newMode);
+    onChange(index, 'image', newMode === 'upload' ? slide.uploadedImage : slide.linkImage);
   };
 
   const handleFileChange = (e) => {
@@ -148,8 +147,17 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (ev) => onChange(index, 'image', ev.target.result);
+    reader.onload = (ev) => {
+      onChange(index, 'uploadedImage', ev.target.result);
+      onChange(index, 'image', ev.target.result);
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleLinkChange = (e) => {
+    const val = e.target.value;
+    onChange(index, 'linkImage', val);
+    onChange(index, 'image', val);
   };
 
   const tabBtn = (active) => ({
@@ -227,9 +235,7 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
           }}>
             <span style={{ fontSize: '20px' }}>🖼️</span>
             <span>
-              {slide.image && slide.image.startsWith('data:')
-                ? '✓ Đã chọn ảnh — nhấn để thay ảnh khác'
-                : 'Nhấn để chọn ảnh từ máy tính (tối đa 5MB)'}
+              {slide.uploadedImage ? '✓ Đã chọn ảnh — nhấn để thay ảnh khác' : 'Nhấn để chọn ảnh từ máy tính (tối đa 5MB)'}
             </span>
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
           </label>
@@ -242,8 +248,8 @@ function SlideEditor({ slide, index, onChange, onRemove }) {
             aria-label="Link URL ảnh"
             placeholder="https://example.com/anh.jpg"
             style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '13px', fontFamily: 'monospace' }}
-            value={slide.image && !slide.image.startsWith('data:') ? slide.image : ''}
-            onChange={e => onChange(index, 'image', e.target.value)}
+            value={slide.linkImage || ''}
+            onChange={handleLinkChange}
           />
         )}
       </div>
@@ -284,6 +290,8 @@ export default function WebSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [siteTitle, setSiteTitle] = useState('');
   const [siteLogo, setSiteLogo] = useState('');
+  const [uploadedLogo, setUploadedLogo] = useState('');
+  const [linkLogo, setLinkLogo] = useState('');
   const [logoMode, setLogoMode] = useState('link');
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
@@ -394,9 +402,12 @@ export default function WebSettingsPage() {
           email_footer: res.data.email_footer || '',
           slides: res.data.slides || [],
         };
+        const isLogoB64 = data.site_logo && data.site_logo.startsWith('data:');
         setSiteTitle(data.site_title);
         setSiteLogo(data.site_logo);
-        setLogoMode(data.site_logo && data.site_logo.startsWith('data:') ? 'upload' : 'link');
+        setUploadedLogo(isLogoB64 ? data.site_logo : '');
+        setLinkLogo(!isLogoB64 ? data.site_logo : '');
+        setLogoMode(isLogoB64 ? 'upload' : 'link');
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
@@ -407,8 +418,23 @@ export default function WebSettingsPage() {
         setEmailSubject(data.email_subject);
         setEmailBody(data.email_body);
         setEmailFooter(data.email_footer);
-        setSlides(data.slides);
-        savedRef.current = data;
+
+        const normalizedSlides = (data.slides || []).map(s => {
+          const isB64 = s.image && s.image.startsWith('data:');
+          return {
+            title: s.title || '',
+            desc: s.desc || '',
+            image: s.image || '',
+            uploadedImage: isB64 ? s.image : '',
+            linkImage: !isB64 ? s.image : '',
+            mode: isB64 ? 'upload' : 'link'
+          };
+        });
+        setSlides(normalizedSlides);
+        savedRef.current = {
+          ...data,
+          slides: normalizedSlides
+        };
         setIsDirty(false);
       }
     } catch (err) {
@@ -436,7 +462,7 @@ export default function WebSettingsPage() {
 
   const handleAddSlide = () => {
     setSlides(prev => {
-      const nextSlides = [...prev, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '' }];
+      const nextSlides = [...prev, { title: 'TÊN HÌNH ẢNH MỚI', desc: 'Mô tả ngắn gọn.', image: '', uploadedImage: '', linkImage: '', mode: 'link' }];
       const nextTotalPages = Math.ceil(nextSlides.length / 5);
       setCurrentPage(nextTotalPages - 1);
       return nextSlides;
@@ -500,11 +526,15 @@ export default function WebSettingsPage() {
     setDragOffset(0);
   };
 
-  // Core save logic (reusable for both form submit and modal save-and-go)
   const doSave = async () => {
     setSaving(true);
     setErrorMsg('');
     try {
+      const dbSlides = slides.map(s => ({
+        title: s.title || '',
+        desc: s.desc || '',
+        image: s.image || ''
+      }));
       const payload = {
         site_title: siteTitle,
         site_logo: siteLogo,
@@ -518,10 +548,13 @@ export default function WebSettingsPage() {
         email_subject: emailSubject,
         email_body: emailBody,
         email_footer: emailFooter,
-        slides
+        slides: dbSlides
       };
       await api.put('/web-settings', payload);
-      savedRef.current = payload;
+      savedRef.current = {
+        ...payload,
+        slides: [...slides]
+      };
       setIsDirty(false);
       if (siteTitle) {
         document.title = siteTitle;
@@ -550,9 +583,12 @@ export default function WebSettingsPage() {
     if (!window.confirm('Bạn có chắc chắn muốn huỷ bỏ toàn bộ các thay đổi chưa lưu?')) return;
     const data = savedRef.current;
     if (data) {
+      const isLogoB64 = data.site_logo && data.site_logo.startsWith('data:');
       setSiteTitle(data.site_title || '');
       setSiteLogo(data.site_logo || '');
-      setLogoMode(data.site_logo && data.site_logo.startsWith('data:') ? 'upload' : 'link');
+      setUploadedLogo(isLogoB64 ? data.site_logo : '');
+      setLinkLogo(!isLogoB64 ? data.site_logo : '');
+      setLogoMode(isLogoB64 ? 'upload' : 'link');
       setDisplayName(data.display_name || '');
       setSubHeading(data.sub_heading || '');
       setDescription(data.description || '');
@@ -563,7 +599,19 @@ export default function WebSettingsPage() {
       setEmailSubject(data.email_subject || '');
       setEmailBody(data.email_body || '');
       setEmailFooter(data.email_footer || '');
-      setSlides(data.slides || []);
+
+      const normalizedSlides = (data.slides || []).map(s => {
+        const isB64 = s.image && s.image.startsWith('data:');
+        return {
+          title: s.title || '',
+          desc: s.desc || '',
+          image: s.image || '',
+          uploadedImage: isB64 ? s.image : '',
+          linkImage: !isB64 ? s.image : '',
+          mode: isB64 ? 'upload' : 'link'
+        };
+      });
+      setSlides(normalizedSlides);
       setIsDirty(false);
       setCurrentPage(0);
     }
@@ -579,10 +627,26 @@ export default function WebSettingsPage() {
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setSiteLogo(ev.target.result);
+      const result = ev.target.result;
+      setUploadedLogo(result);
+      setSiteLogo(result);
       markDirty();
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSwitchLogoMode = (newMode) => {
+    if (newMode === logoMode) return;
+    setLogoMode(newMode);
+    setSiteLogo(newMode === 'upload' ? uploadedLogo : linkLogo);
+    markDirty();
+  };
+
+  const handleLogoLinkChange = (e) => {
+    const val = e.target.value;
+    setLinkLogo(val);
+    setSiteLogo(val);
+    markDirty();
   };
 
   const logoTabBtn = (active) => ({
@@ -864,14 +928,14 @@ export default function WebSettingsPage() {
                       <button 
                         type="button" 
                         style={logoTabBtn(logoMode === 'upload')} 
-                        onClick={() => { setLogoMode('upload'); }}
+                        onClick={() => handleSwitchLogoMode('upload')}
                       >
                         ⬆️ Upload file
                       </button>
                       <button 
                         type="button" 
                         style={logoTabBtn(logoMode === 'link')} 
-                        onClick={() => { setLogoMode('link'); }}
+                        onClick={() => handleSwitchLogoMode('link')}
                       >
                         🔗 Dùng link URL
                       </button>
@@ -891,7 +955,7 @@ export default function WebSettingsPage() {
                         background: 'rgba(255,255,255,0.02)',
                         margin: 0
                       }}>
-                        <span>{siteLogo && siteLogo.startsWith('data:') ? '✓ Đã chọn file' : 'Chọn logo từ máy (tối đa 5MB)'}</span>
+                        <span>{uploadedLogo ? '✓ Đã chọn file' : 'Chọn logo từ máy (tối đa 5MB)'}</span>
                         <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoFileChange} />
                       </label>
                     ) : (
@@ -899,8 +963,8 @@ export default function WebSettingsPage() {
                         type="url"
                         placeholder="https://example.com/logo.png"
                         style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '12px', fontFamily: 'monospace', width: '100%' }}
-                        value={siteLogo && !siteLogo.startsWith('data:') ? siteLogo : ''}
-                        onChange={e => { setSiteLogo(e.target.value); markDirty(); }}
+                        value={linkLogo}
+                        onChange={handleLogoLinkChange}
                       />
                     )}
                   </div>
