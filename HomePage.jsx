@@ -209,7 +209,8 @@ export default function HomePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 0.2s ease',
-                backdropFilter: 'blur(4px)'
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)'
               }}
               onMouseEnter={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.25)'; }}
               onMouseLeave={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.1)'; }}
@@ -289,7 +290,8 @@ export default function HomePage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'all 0.2s ease',
-                backdropFilter: 'blur(4px)'
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)'
               }}
               onMouseEnter={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.25)'; }}
               onMouseLeave={(e) => { e.target.style.background = 'rgba(255, 255, 255, 0.1)'; }}

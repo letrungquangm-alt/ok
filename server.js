@@ -17,6 +17,20 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 
+// Security headers
+app.use((req, res, next) => {
+  // Replace X-Frame-Options with CSP frame-ancestors (stronger, more consistent)
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+  // Remove deprecated X-XSS-Protection (can cause vulnerabilities)
+  res.removeHeader('X-XSS-Protection');
+  // Use Cache-Control instead of Expires
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.removeHeader('Expires');
+  // Ensure proper charset for API responses
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  next();
+});
+
 // API routes
 app.use('/api', apiRoutes);
 

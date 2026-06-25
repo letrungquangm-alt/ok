@@ -7,7 +7,7 @@ function UnsavedModal({ onSave, onDiscard, onCancel, saving }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       animation: 'fadeIn 0.15s ease'
     }}>
@@ -388,12 +388,12 @@ export default function WebSettingsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label htmlFor="ws-display-name" className="label">Tên hiển thị Website</label>
-                <input id="ws-display-name" name="display_name" type="text" placeholder="Ví dụ: Kiet Hoang Photography" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <input id="ws-display-name" name="display_name" type="text" autoComplete="organization" placeholder="Ví dụ: Kiet Hoang Photography" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={displayName} onChange={e => { setDisplayName(e.target.value); markDirty(); }} required />
               </div>
               <div>
                 <label htmlFor="ws-sub-heading" className="label">Tiêu đề phụ (Sub-heading)</label>
-                <input id="ws-sub-heading" name="sub_heading" type="text" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <input id="ws-sub-heading" name="sub_heading" type="text" autoComplete="off" placeholder="Ví dụ: Chuyên chụp ảnh chân dung, phong cảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={subHeading} onChange={e => { setSubHeading(e.target.value); markDirty(); }} required />
               </div>
             </div>
@@ -414,12 +414,12 @@ export default function WebSettingsPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
                 <label htmlFor="ws-phone" className="label">📞 Điện thoại / Zalo</label>
-                <input id="ws-phone" name="phone" type="tel" placeholder="Ví dụ: 0703.01.2959" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <input id="ws-phone" name="phone" type="tel" autoComplete="tel" placeholder="Ví dụ: 0703.01.2959" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={phone} onChange={e => { setPhone(e.target.value); markDirty(); }} />
               </div>
               <div>
                 <label htmlFor="ws-facetime" className="label">✉ FaceTime</label>
-                <input id="ws-facetime" name="facetime" type="text" placeholder="Ví dụ: 0703.01.2959 (Audio Only)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                <input id="ws-facetime" name="facetime" type="text" autoComplete="off" placeholder="Ví dụ: 0703.01.2959 (Audio Only)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={facetime} onChange={e => { setFacetime(e.target.value); markDirty(); }} />
               </div>
             </div>

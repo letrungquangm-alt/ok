@@ -188,6 +188,7 @@ export default function MainLayout() {
           transform: translate(-50%, 0);
           background: rgba(9, 11, 10, 0.85);
           backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 999px;
           padding: 6px;
