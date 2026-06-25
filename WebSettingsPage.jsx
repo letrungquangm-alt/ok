@@ -1431,7 +1431,7 @@ export default function WebSettingsPage() {
               </div>
 
               {/* Conditional Panels */}
-              {(fontEditMode === 'brand' || fontEditMode === 'all' || fontEditMode === 'sync') && (
+              {(fontEditMode === 'brand' || fontEditMode === 'all') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Logo / Thương hiệu (Sidebar)',
@@ -1443,7 +1443,7 @@ export default function WebSettingsPage() {
                 </div>
               )}
 
-              {(fontEditMode === 'subheading' || fontEditMode === 'all' || fontEditMode === 'sync') && (
+              {(fontEditMode === 'subheading' || fontEditMode === 'all') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Tiêu đề phụ (Sub-heading)',
@@ -1455,7 +1455,7 @@ export default function WebSettingsPage() {
                 </div>
               )}
 
-              {(fontEditMode === 'description' || fontEditMode === 'all' || fontEditMode === 'sync') && (
+              {(fontEditMode === 'description' || fontEditMode === 'all') && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Giới thiệu ngắn (Description)',
@@ -1518,24 +1518,26 @@ export default function WebSettingsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'bold' }}>👁️ Mẫu hiển thị Font chữ thực tế (Bản nháp trực quan)</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '12px' }}>
                 {/* Brand Preview */}
-                <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--copper)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    Sidebar Brand: "{brandName}" ({brandFontName})
+                {(fontEditMode === 'brand' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncBrand)) && (
+                  <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--copper)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      Sidebar Brand: "{brandName}" ({brandFontName})
+                    </div>
+                    <div style={{ 
+                      fontFamily: `"${brandFontName}", sans-serif`, 
+                      fontSize: '24px', 
+                      fontWeight: 'bold', 
+                      color: '#fff',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {brandName}
+                    </div>
                   </div>
-                  <div style={{ 
-                    fontFamily: `"${brandFontName}", sans-serif`, 
-                    fontSize: '24px', 
-                    fontWeight: 'bold', 
-                    color: '#fff',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {brandName}
-                  </div>
-                </div>
+                )}
 
                 {/* Web Interface Preview */}
                 <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
@@ -1553,34 +1555,38 @@ export default function WebSettingsPage() {
                 </div>
 
                 {/* Sub-heading Preview */}
-                <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--green-2)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    Tiêu đề phụ: ({subHeadingFontName})
+                {(fontEditMode === 'subheading' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncSubHeading)) && (
+                  <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--green-2)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      Tiêu đề phụ: ({subHeadingFontName})
+                    </div>
+                    <div style={{ 
+                      fontFamily: `"${subHeadingFontName}", sans-serif`, 
+                      fontSize: '16px', 
+                      color: 'var(--copper)',
+                      fontWeight: '600'
+                    }}>
+                      {subHeading || 'Chuyên chụp ảnh chân dung, phong cảnh'}
+                    </div>
                   </div>
-                  <div style={{ 
-                    fontFamily: `"${subHeadingFontName}", sans-serif`, 
-                    fontSize: '16px', 
-                    color: 'var(--copper)',
-                    fontWeight: '600'
-                  }}>
-                    {subHeading || 'Chuyên chụp ảnh chân dung, phong cảnh'}
-                  </div>
-                </div>
+                )}
 
                 {/* Description Preview */}
-                <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--purple)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    Giới thiệu ngắn: ({descFontName})
+                {(fontEditMode === 'description' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncDesc)) && (
+                  <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--purple)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      Giới thiệu ngắn: ({descFontName})
+                    </div>
+                    <div style={{ 
+                      fontFamily: `"${descFontName}", sans-serif`, 
+                      fontSize: '14px', 
+                      color: '#cbd5e1',
+                      lineHeight: '1.5'
+                    }}>
+                      {description || 'Mô tả ngắn về studio/dịch vụ của bạn...'}
+                    </div>
                   </div>
-                  <div style={{ 
-                    fontFamily: `"${descFontName}", sans-serif`, 
-                    fontSize: '14px', 
-                    color: '#cbd5e1',
-                    lineHeight: '1.5'
-                  }}>
-                    {description || 'Mô tả ngắn về studio/dịch vụ của bạn...'}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
