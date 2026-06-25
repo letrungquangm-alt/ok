@@ -284,6 +284,7 @@ export default function WebSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [siteTitle, setSiteTitle] = useState('');
   const [siteLogo, setSiteLogo] = useState('');
+  const [logoMode, setLogoMode] = useState('link');
   const [displayName, setDisplayName] = useState('');
   const [subHeading, setSubHeading] = useState('');
   const [description, setDescription] = useState('');
@@ -395,6 +396,7 @@ export default function WebSettingsPage() {
         };
         setSiteTitle(data.site_title);
         setSiteLogo(data.site_logo);
+        setLogoMode(data.site_logo && data.site_logo.startsWith('data:') ? 'upload' : 'link');
         setDisplayName(data.display_name);
         setSubHeading(data.sub_heading);
         setDescription(data.description);
@@ -550,6 +552,7 @@ export default function WebSettingsPage() {
     if (data) {
       setSiteTitle(data.site_title || '');
       setSiteLogo(data.site_logo || '');
+      setLogoMode(data.site_logo && data.site_logo.startsWith('data:') ? 'upload' : 'link');
       setDisplayName(data.display_name || '');
       setSubHeading(data.sub_heading || '');
       setDescription(data.description || '');
@@ -565,6 +568,34 @@ export default function WebSettingsPage() {
       setCurrentPage(0);
     }
   };
+
+  const handleLogoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Logo phải nhỏ hơn 5MB. Vui lòng chọn ảnh khác hoặc dùng link URL.');
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setSiteLogo(ev.target.result);
+      markDirty();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const logoTabBtn = (active) => ({
+    padding: '4px 12px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    border: '1px solid var(--line)',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    background: active ? 'var(--green-2)' : 'transparent',
+    color: active ? '#fff' : 'var(--muted)',
+    transition: 'all 0.15s',
+  });
 
   // Modal: Save then navigate away
   const handleModalSave = async () => {
@@ -797,10 +828,84 @@ export default function WebSettingsPage() {
           <section style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>⚙️ Thông tin chung</h3>
 
-            <div>
-              <label htmlFor="ws-site-title" className="label">Tiêu đề Web (Hiển thị trên tab trình duyệt)</label>
-              <input id="ws-site-title" name="site_title" type="text" placeholder="Ví dụ: HoangKiet - Tra cứu thông tin gói ảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
-                value={siteTitle} onChange={e => { setSiteTitle(e.target.value); markDirty(); }} required />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label htmlFor="ws-site-title" className="label">Tiêu đề Web (Hiển thị trên tab trình duyệt)</label>
+                <input id="ws-site-title" name="site_title" type="text" placeholder="Ví dụ: HoangKiet - Tra cứu thông tin gói ảnh" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                  value={siteTitle} onChange={e => { setSiteTitle(e.target.value); markDirty(); }} required />
+              </div>
+
+              <div>
+                <label className="label" style={{ display: 'block', marginBottom: '8px' }}>Logo Website</label>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                  {/* Logo Preview */}
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    border: '1px solid var(--line)',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    background: '#1c221e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {siteLogo ? (
+                      <img src={siteLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <span style={{ fontSize: '18px' }}>📸</span>
+                    )}
+                  </div>
+
+                  {/* Logo Upload/Link input */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button 
+                        type="button" 
+                        style={logoTabBtn(logoMode === 'upload')} 
+                        onClick={() => { setLogoMode('upload'); }}
+                      >
+                        ⬆️ Upload file
+                      </button>
+                      <button 
+                        type="button" 
+                        style={logoTabBtn(logoMode === 'link')} 
+                        onClick={() => { setLogoMode('link'); }}
+                      >
+                        🔗 Dùng link URL
+                      </button>
+                    </div>
+
+                    {logoMode === 'upload' ? (
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 12px',
+                        border: '1px dashed var(--line)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.02)',
+                        margin: 0
+                      }}>
+                        <span>{siteLogo && siteLogo.startsWith('data:') ? '✓ Đã chọn file' : 'Chọn logo từ máy (tối đa 5MB)'}</span>
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoFileChange} />
+                      </label>
+                    ) : (
+                      <input
+                        type="url"
+                        placeholder="https://example.com/logo.png"
+                        style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--line)', fontSize: '12px', fontFamily: 'monospace', width: '100%' }}
+                        value={siteLogo && !siteLogo.startsWith('data:') ? siteLogo : ''}
+                        onChange={e => { setSiteLogo(e.target.value); markDirty(); }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
