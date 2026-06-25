@@ -505,15 +505,17 @@ router.delete('/profile', async (req, res, next) => {
 
 router.get('/dashboard', async (req, res, next) => {
   try {
-    const [pendingPaymentRes, pendingEmailRes, historyRes] = await Promise.all([
+    const [pendingPaymentRes, pendingEmailRes, historyRes, sentEmailsRes] = await Promise.all([
       query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE is_paid = FALSE AND status NOT IN ('COMPLETED', 'CANCELLED')"),
       query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE is_paid = TRUE AND status NOT IN ('COMPLETED', 'CANCELLED')"),
-      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE status IN ('COMPLETED', 'CANCELLED')")
+      query("SELECT COUNT(*)::int AS count FROM sales_orders WHERE status IN ('COMPLETED', 'CANCELLED')"),
+      query("SELECT COUNT(*)::int AS count FROM sent_emails")
     ]);
     res.json({
       pendingPayment: pendingPaymentRes.rows[0].count,
       pendingEmail: pendingEmailRes.rows[0].count,
-      historyOrders: historyRes.rows[0].count
+      historyOrders: historyRes.rows[0].count,
+      sentEmailsCount: sentEmailsRes.rows[0].count
     });
   } catch (error) {
     next(error);

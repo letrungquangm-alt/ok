@@ -17,7 +17,7 @@ import { createPortal } from 'react-dom';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ pendingPayment: 0, pendingEmail: 0, historyOrders: 0 });
+  const [stats, setStats] = useState({ pendingPayment: 0, pendingEmail: 0, historyOrders: 0, sentEmailsCount: 0 });
 
   // States cho modal tạo đơn hàng
   const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
@@ -143,7 +143,7 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <section className="metrics" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+      <section className="metrics">
         <article className="metric" onClick={() => navigate('/orders?tab=pending_payment')} style={{ cursor: 'pointer' }}>
           <span className="label">Đang chờ khách thanh toán</span>
           <div className="value">{stats.pendingPayment || 0}</div>
@@ -158,6 +158,11 @@ const DashboardPage = () => {
           <span className="label">Lịch sử đơn hàng</span>
           <div className="value">{stats.historyOrders || 0}</div>
           <div className="trend">Đã hoàn thành / hủy</div>
+        </article>
+        <article className="metric" onClick={() => navigate('/emails')} style={{ cursor: 'pointer' }}>
+          <span className="label">Thư đã gửi</span>
+          <div className="value">{stats.sentEmailsCount || 0}</div>
+          <div className="trend">Lịch sử gửi mail</div>
         </article>
       </section>
 
