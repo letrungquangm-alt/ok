@@ -392,7 +392,7 @@ export default function WebSettingsPage() {
   const [syncSubHeading, setSyncSubHeading] = useState(false);
   const [syncDesc, setSyncDesc] = useState(false);
   
-  // Font edit mode: brand | subheading | description | sync | all
+  // Font edit mode: brand | subheading | description
   const [fontEditMode, setFontEditMode] = useState('brand');
 
   const [displayName, setDisplayName] = useState('');
@@ -485,24 +485,24 @@ export default function WebSettingsPage() {
     }, 0);
   };
 
-  const renderFontInputs = (title, type, setType, name, setName, url, setUrl, isSynced, targetKey) => {
+  const renderFontInputs = (title, type, setType, name, setName, url, setUrl, isSynced, setSyncVal, targetKey) => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', opacity: isSynced ? 0.75 : 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <label className="label" style={{ margin: 0, fontWeight: 'bold' }}>{title}</label>
-          {isSynced && (
-            <span style={{ 
-              fontSize: '11px', 
-              color: '#10b981', 
-              background: 'rgba(16,185,129,0.1)', 
-              padding: '2px 8px', 
-              borderRadius: '4px', 
-              fontWeight: 'bold',
-              border: '1px solid rgba(16,185,129,0.2)'
-            }}>
-              🔗 Đang tự động đồng bộ theo Font giao diện
-            </span>
-          )}
+          {setSyncVal ? (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', color: isSynced ? '#10b981' : 'var(--muted)', margin: 0 }}>
+              <input 
+                type="checkbox" 
+                checked={isSynced} 
+                onChange={e => { setSyncVal(e.target.checked); markDirty(); }}
+                style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: 'var(--copper)' }}
+                aria-label={`Đồng bộ ${title} theo phông nền Website`}
+                title={`Đồng bộ ${title} theo phông nền Website`}
+              />
+              <span>🔗 Đồng bộ theo phông nền</span>
+            </label>
+          ) : null}
         </div>
         
         <select 
@@ -1410,7 +1410,7 @@ export default function WebSettingsPage() {
                   siteFontType, setSiteFontType,
                   siteFontName, setSiteFontName,
                   siteFontUrl, setSiteFontUrl,
-                  false, 'site'
+                  false, null, 'site'
                 )}
               </div>
 
@@ -1425,90 +1425,43 @@ export default function WebSettingsPage() {
                   <option value="brand">1. Sửa phông chữ Logo/Thương hiệu (Brand)</option>
                   <option value="subheading">2. Sửa phông chữ Tiêu đề phụ (Sub-heading)</option>
                   <option value="description">3. Sửa phông chữ Giới thiệu ngắn (Description)</option>
-                  <option value="sync">4. Tích chọn phông chữ muốn đồng bộ theo Giao diện Web</option>
-                  <option value="all">5. Hiển thị và sửa tất cả phông chữ</option>
                 </select>
               </div>
 
               {/* Conditional Panels */}
-              {(fontEditMode === 'brand' || fontEditMode === 'all') && (
+              {fontEditMode === 'brand' && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Logo / Thương hiệu (Sidebar)',
                     brandFontType, setBrandFontType,
                     brandFontName, setBrandFontName,
                     brandFontUrl, setBrandFontUrl,
-                    syncBrand, 'brand'
+                    syncBrand, setSyncBrand, 'brand'
                   )}
                 </div>
               )}
 
-              {(fontEditMode === 'subheading' || fontEditMode === 'all') && (
+              {fontEditMode === 'subheading' && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Tiêu đề phụ (Sub-heading)',
                     subHeadingFontType, setSubHeadingFontType,
                     subHeadingFontName, setSubHeadingFontName,
                     subHeadingFontUrl, setSubHeadingFontUrl,
-                    syncSubHeading, 'subheading'
+                    syncSubHeading, setSyncSubHeading, 'subheading'
                   )}
                 </div>
               )}
 
-              {(fontEditMode === 'description' || fontEditMode === 'all') && (
+              {fontEditMode === 'description' && (
                 <div style={{ padding: '16px', border: '1px solid var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)' }}>
                   {renderFontInputs(
                     'Phông chữ Giới thiệu ngắn (Description)',
                     descFontType, setDescFontType,
                     descFontName, setDescFontName,
                     descFontUrl, setDescFontUrl,
-                    syncDesc, 'description'
+                    syncDesc, setSyncDesc, 'description'
                   )}
-                </div>
-              )}
-
-              {fontEditMode === 'sync' && (
-                <div style={{ padding: '20px', border: '1px dashed var(--line)', borderRadius: '10px', background: 'rgba(255,255,255,0.01)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: 'var(--blue)' }}>🔗 Tích chọn các phông chữ muốn tự động đồng bộ theo phông chữ Giao diện Web:</span>
-                  <p style={{ margin: '0', fontSize: '12.5px', color: '#aaaaaa', lineHeight: '1.45' }}>
-                    💡 <strong>Nguyên lý hoạt động:</strong> Phông chữ được lấy làm <strong>gốc / chuẩn</strong> là <strong>"Font chữ giao diện Website (Phông chữ nền)"</strong> (luôn hiển thị ở khung đầu tiên phía trên). Khi bạn thay đổi phông chữ giao diện chính đó, tất cả phông chữ con được chọn đồng bộ bên dưới sẽ tự động cập nhật theo.
-                  </p>
-                  
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', margin: 0 }}>
-                    <input 
-                      type="checkbox" 
-                      checked={syncBrand} 
-                      onChange={e => { setSyncBrand(e.target.checked); markDirty(); }} 
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
-                      aria-label="Đồng bộ phông chữ Logo / Thương hiệu theo Giao diện Web"
-                      title="Đồng bộ phông chữ Logo / Thương hiệu theo Giao diện Web"
-                    />
-                    <span>Đồng bộ phông chữ <strong>Logo / Thương hiệu (Brand)</strong></span>
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', margin: 0 }}>
-                    <input 
-                      type="checkbox" 
-                      checked={syncSubHeading} 
-                      onChange={e => { setSyncSubHeading(e.target.checked); markDirty(); }} 
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
-                      aria-label="Đồng bộ phông chữ Tiêu đề phụ theo Giao diện Web"
-                      title="Đồng bộ phông chữ Tiêu đề phụ theo Giao diện Web"
-                    />
-                    <span>Đồng bộ phông chữ <strong>Tiêu đề phụ (Sub-heading)</strong></span>
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', margin: 0 }}>
-                    <input 
-                      type="checkbox" 
-                      checked={syncDesc} 
-                      onChange={e => { setSyncDesc(e.target.checked); markDirty(); }} 
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
-                      aria-label="Đồng bộ phông chữ Giới thiệu ngắn theo Giao diện Web"
-                      title="Đồng bộ phông chữ Giới thiệu ngắn theo Giao diện Web"
-                    />
-                    <span>Đồng bộ phông chữ <strong>Giới thiệu ngắn (Description)</strong></span>
-                  </label>
                 </div>
               )}
             </div>
@@ -1520,7 +1473,7 @@ export default function WebSettingsPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '12px' }}>
                 {/* Brand Preview */}
-                {(fontEditMode === 'brand' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncBrand)) && (
+                {fontEditMode === 'brand' && (
                   <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                     <div style={{ fontSize: '11px', color: 'var(--copper)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                       Sidebar Brand: "{brandName}" ({brandFontName})
@@ -1555,7 +1508,7 @@ export default function WebSettingsPage() {
                 </div>
 
                 {/* Sub-heading Preview */}
-                {(fontEditMode === 'subheading' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncSubHeading)) && (
+                {fontEditMode === 'subheading' && (
                   <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                     <div style={{ fontSize: '11px', color: 'var(--green-2)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                       Tiêu đề phụ: ({subHeadingFontName})
@@ -1572,7 +1525,7 @@ export default function WebSettingsPage() {
                 )}
 
                 {/* Description Preview */}
-                {(fontEditMode === 'description' || fontEditMode === 'all' || (fontEditMode === 'sync' && syncDesc)) && (
+                {fontEditMode === 'description' && (
                   <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)' }}>
                     <div style={{ fontSize: '11px', color: 'var(--purple)', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
                       Giới thiệu ngắn: ({descFontName})
