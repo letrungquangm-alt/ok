@@ -281,7 +281,7 @@ export default function ShopPage({ viewType = 'search' }) {
           </section>
 
           {/* Lookup entry panel */}
-          <section className="panel" style={{ background: '#fff' }}>
+          <section className="panel" style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}>
             <form onSubmit={(e) => handleSearch(e)}>
               <div style={{ marginBottom: '16px' }}>
                 <span className="label" style={{ fontSize: '15px' }}>Mã tra cứu của bạn</span>
@@ -327,7 +327,7 @@ export default function ShopPage({ viewType = 'search' }) {
         <>
           {/* Search results view (viewType === 'result') */}
           {searchLoading ? (
-            <section className="panel" style={{ background: '#fff', textAlign: 'center', padding: '60px' }}>
+            <section className="panel" style={{ background: 'var(--paper)', border: '1px solid var(--line)', textAlign: 'center', padding: '60px' }}>
               <div className="spinner" style={{ border: '4px solid rgba(0,0,0,0.1)', width: '40px', height: '40px', borderRadius: '50%', borderLeftColor: 'var(--green-2)', animation: 'spin 1s linear infinite', margin: '0 auto 20px auto' }}></div>
               <p>Đang tải thông tin kết quả tra cứu...</p>
             </section>
@@ -335,9 +335,9 @@ export default function ShopPage({ viewType = 'search' }) {
             <div className="page-transition" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* Customer info card */}
-              <section className="panel" style={{ background: '#f9fbf9', border: '1px solid #cce0d6' }}>
+              <section className="panel" style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>
-                  <h3 style={{ margin: 0, color: 'var(--green-2)' }}>Kết quả tra cứu</h3>
+                  <h3 style={{ margin: 0, color: 'var(--copper)' }}>Kết quả tra cứu</h3>
                   <button 
                     type="button" 
                     className="btn ghost" 
@@ -356,12 +356,12 @@ export default function ShopPage({ viewType = 'search' }) {
                   <div><span style={{ color: 'var(--muted)' }}>Họ và tên:</span> <strong style={{ color: 'var(--ink)' }}>{lookupResult.customer.fullName}</strong></div>
                   <div><span style={{ color: 'var(--muted)' }}>Email:</span> <strong style={{ color: 'var(--ink)' }}>{lookupResult.customer.email}</strong></div>
                   <div><span style={{ color: 'var(--muted)' }}>Số điện thoại:</span> <strong style={{ color: 'var(--ink)' }}>{lookupResult.customer.phone || 'Chưa cập nhật'}</strong></div>
-                  <div><span style={{ color: 'var(--muted)' }}>Trạng thái:</span> <span className="pill green" style={{ background: '#dfeee7', color: 'var(--green-2)' }}>Đang hoạt động</span></div>
+                  <div><span style={{ color: 'var(--muted)' }}>Trạng thái:</span> <span className="pill green" style={{ background: 'var(--bg)', color: 'var(--green-2)', border: '1px solid var(--line)' }}>Đang hoạt động</span></div>
                 </div>
               </section>
 
               {/* Orders/Photos listing */}
-              <section className="panel" style={{ background: '#fff' }}>
+              <section className="panel" style={{ background: 'var(--paper)', border: '1px solid var(--line)' }}>
                 {/* Custom Tabs Navigation */}
                 <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: '20px', gap: '24px' }}>
                   <button 
@@ -487,7 +487,7 @@ export default function ShopPage({ viewType = 'search' }) {
               </section>
             </div>
           ) : (
-            <section className="panel" style={{ background: '#fff', textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
+            <section className="panel" style={{ background: 'var(--paper)', border: '1px solid var(--line)', textAlign: 'center', padding: '60px', color: 'var(--muted)' }}>
               <span style={{ fontSize: '48px', display: 'block', marginBottom: '10px' }}>⚠️</span>
               <p>Không tìm thấy thông tin kết quả tra cứu. Vui lòng quay lại nhập mã.</p>
               <button className="btn primary" onClick={() => navigate('/tracuugoianh')} style={{ marginTop: '20px' }}>Quay lại</button>
@@ -499,7 +499,7 @@ export default function ShopPage({ viewType = 'search' }) {
       {/* --- CREATE LOOKUP CODE MODAL --- */}
       {showCreateModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <form className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: '#fff' }} onSubmit={handleCreateCode}>
+          <form className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '24px', background: 'var(--paper)', border: '1px solid var(--line)' }} onSubmit={handleCreateCode}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
               <h3 style={{ color: 'var(--green-2)', margin: 0 }}>Đăng ký mã tra cứu</h3>
               <button type="button" className="btn ghost" style={{ border: 'none', padding: '4px 8px', minHeight: 'auto', color: 'var(--muted)' }} onClick={resetAllModals}>✕</button>
@@ -510,7 +510,7 @@ export default function ShopPage({ viewType = 'search' }) {
                 <span style={{ fontSize: '48px' }}>🎉</span>
                 <h4 style={{ margin: '12px 0 6px 0', color: 'var(--green-2)' }}>Đăng ký mã thành công!</h4>
                 <p style={{ color: 'var(--muted)', fontSize: '14px', margin: '0 0 16px 0' }}>Mã này sẽ gắn bó với email của bạn:</p>
-                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: '#f2f8f5', border: '1px dashed var(--green)', padding: '16px', borderRadius: '8px', color: 'var(--ink)', display: 'inline-block', minWidth: '200px' }}>
+                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: 'var(--bg)', border: '1px dashed var(--green)', padding: '16px', borderRadius: '8px', color: 'var(--ink)', display: 'inline-block', minWidth: '200px' }}>
                   {createdCode}
                 </div>
                 <p style={{ color: 'var(--muted)', fontSize: '12px', marginTop: '16px' }}>Mã tra cứu đã tự động được điền vào ô tìm kiếm.</p>
@@ -602,7 +602,7 @@ export default function ShopPage({ viewType = 'search' }) {
       {/* --- FORGOT CODE / OTP MODAL --- */}
       {showForgotModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div className="panel page-transition" style={{ width: '100%', maxWidth: '400px', padding: '24px', background: '#fff' }}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '400px', padding: '24px', background: 'var(--paper)', border: '1px solid var(--line)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
               <h3 style={{ color: 'var(--copper)', margin: 0 }}>Quên mã tra cứu</h3>
               <button type="button" className="btn ghost" style={{ border: 'none', padding: '4px 8px', minHeight: 'auto', color: 'var(--muted)' }} onClick={resetAllModals}>✕</button>
@@ -611,11 +611,11 @@ export default function ShopPage({ viewType = 'search' }) {
             {recoveredCode ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <span style={{ fontSize: '48px' }}>🔑</span>
-                <h4 style={{ margin: '12px 0 6px 0', color: '#000000' }}>Mã tra cứu của bạn là:</h4>
-                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: '#f4f6f1', border: '1px dashed var(--line)', padding: '16px', borderRadius: '8px', color: '#000000', display: 'inline-block', minWidth: '200px', margin: '12px 0' }}>
+                <h4 style={{ margin: '12px 0 6px 0', color: 'var(--ink)' }}>Mã tra cứu của bạn là:</h4>
+                <div style={{ fontSize: '28px', fontWeight: 'black', letterSpacing: '2px', background: 'var(--bg)', border: '1px dashed var(--line)', padding: '16px', borderRadius: '8px', color: 'var(--ink)', display: 'inline-block', minWidth: '200px', margin: '12px 0' }}>
                   {recoveredCode}
                 </div>
-                <p style={{ color: '#000000', fontSize: '13px' }}>Hãy lưu lại mã này hoặc nhập ngay để tra cứu.</p>
+                <p style={{ color: 'var(--ink)', fontSize: '13px' }}>Hãy lưu lại mã này hoặc nhập ngay để tra cứu.</p>
                 <button type="button" className="btn primary" style={{ width: '100%', marginTop: '24px' }} onClick={resetAllModals}>OK</button>
               </div>
             ) : forgotStep === 1 ? (
@@ -688,8 +688,8 @@ export default function ShopPage({ viewType = 'search' }) {
       {/* --- VIETQR PAYMENT MODAL --- */}
       {selectedOrderToPay && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden', background: '#fff', borderRadius: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: '#f9fbf9' }}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '0', overflow: 'hidden', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--green-2)' }}>Thanh toán qua QR Chuyển khoản</h3>
               {!payChecking && (
                 <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: 'var(--muted)' }} onClick={closePaymentModal}>✕</button>
@@ -702,7 +702,7 @@ export default function ShopPage({ viewType = 'search' }) {
                 display: 'flex', 
                 justifyContent: 'center', 
                 alignItems: 'center',
-                background: '#fafafa', 
+                background: 'var(--bg)', 
                 padding: '16px', 
                 borderRadius: '12px', 
                 border: '1px solid var(--line)',
@@ -730,7 +730,7 @@ export default function ShopPage({ viewType = 'search' }) {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: paySuccess ? 'rgba(240, 253, 244, 0.95)' : 'rgba(255, 255, 255, 0.85)',
+                    background: paySuccess ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -760,7 +760,7 @@ export default function ShopPage({ viewType = 'search' }) {
                           width: '64px',
                           height: '64px',
                           borderRadius: '50%',
-                          background: '#dfeee7',
+                          background: 'var(--bg)',
                           color: 'var(--green-2)',
                           display: 'grid',
                           placeItems: 'center',
@@ -790,7 +790,7 @@ export default function ShopPage({ viewType = 'search' }) {
                     style={{ 
                       width: '100%', 
                       padding: '10px 14px', 
-                      background: '#f8faf9', 
+                      background: 'var(--bg)', 
                       border: 'none', 
                       display: 'flex', 
                       justifyContent: 'space-between', 
@@ -825,7 +825,7 @@ export default function ShopPage({ viewType = 'search' }) {
                       <div>
                         <span style={{ color: 'var(--muted)' }}>Nội dung chuyển khoản:</span> 
                         <br/>
-                        <code style={{ fontSize: '14px', fontWeight: 'bold', background: '#eaeaea', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', letterSpacing: '0.5px' }}>
+                        <code style={{ fontSize: '14px', fontWeight: 'bold', background: 'var(--bg)', color: 'var(--ink)', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', letterSpacing: '0.5px' }}>
                           {selectedOrderToPay.lookup_code} Thanh Toan Goi Anh
                         </code>
                       </div>
@@ -912,8 +912,8 @@ export default function ShopPage({ viewType = 'search' }) {
       {/* --- GENERIC SUCCESS/CONGRATULATIONS MODAL --- */}
       {showSuccessModal && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '30px 20px', textAlign: 'center', background: '#fff', borderRadius: '10px', boxShadow: 'var(--shadow)' }}>
-            <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: '#dfeee7', color: 'var(--green-2)', display: 'grid', placeItems: 'center', fontSize: '36px', margin: '0 auto 20px auto', animation: 'scaleUp 0.3s ease' }}>
+          <div className="panel page-transition" style={{ width: '100%', maxWidth: '440px', padding: '30px 20px', textAlign: 'center', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '10px', boxShadow: 'var(--shadow)' }}>
+            <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'var(--bg)', color: 'var(--green-2)', display: 'grid', placeItems: 'center', fontSize: '36px', margin: '0 auto 20px auto', animation: 'scaleUp 0.3s ease' }}>
               ✓
             </div>
             <h3 style={{ color: 'var(--green-2)', margin: '0 0 12px 0' }}>{successModalConfig.title}</h3>
@@ -935,7 +935,7 @@ export default function ShopPage({ viewType = 'search' }) {
 
         return createPortal(
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9998, padding: '20px' }}>
-            <div className="panel page-transition" style={{ width: '100%', maxWidth: '500px', padding: '24px', background: '#fff', borderRadius: '12px', boxShadow: 'var(--shadow)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="panel page-transition" style={{ width: '100%', maxWidth: '500px', padding: '24px', background: 'var(--paper)', border: '1px solid var(--line)', borderRadius: '12px', boxShadow: 'var(--shadow)', maxHeight: '90vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>
                 <div>
                   <h3 style={{ color: 'var(--green-2)', margin: 0, fontSize: '18px' }}>Chi tiết gói sản phẩm</h3>
@@ -968,13 +968,13 @@ export default function ShopPage({ viewType = 'search' }) {
                 <span className="label" style={{ fontSize: '13px', marginBottom: '8px', display: 'block' }}>Ảnh xem trước (Preview)</span>
                 {order.preview_image ? (
                   <div 
-                    style={{ width: '100%', height: '220px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--line)', cursor: 'zoom-in', background: '#f4f6f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: '100%', height: '220px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--line)', cursor: 'zoom-in', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     onClick={() => setZoomImage(order.preview_image)}
                   >
                     <img src={order.preview_image} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                   </div>
                 ) : (
-                  <div style={{ width: '100%', height: '180px', borderRadius: '8px', border: '1px dashed var(--line)', background: '#fafafa', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+                  <div style={{ width: '100%', height: '180px', borderRadius: '8px', border: '1px dashed var(--line)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '13px' }}>
                     <span style={{ fontSize: '28px', marginBottom: '8px' }}>📷</span>
                     <span>Chưa có ảnh xem trước</span>
                   </div>
@@ -982,7 +982,7 @@ export default function ShopPage({ viewType = 'search' }) {
               </div>
 
               {/* Package info & action */}
-              <div style={{ background: '#f9fbf9', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)', marginBottom: '20px', fontSize: '14px' }}>
+              <div style={{ background: 'var(--bg)', padding: '16px', borderRadius: '8px', border: '1px solid var(--line)', marginBottom: '20px', fontSize: '14px' }}>
                 {order.is_paid ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div style={{ background: '#e2f3eb', color: '#065f46', padding: '12px', borderRadius: '8px', border: '1px solid #a7f3d0', fontSize: '14px', textAlign: 'center', fontWeight: 'bold', lineHeight: '1.5' }}>

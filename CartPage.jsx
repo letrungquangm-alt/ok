@@ -81,14 +81,14 @@ export default function CartPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {cart.map(item => (
             <div key={item.id} className="panel page-transition" style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '16px' }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: '#f0f3ed', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: 'var(--bg)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '30px' }}>
                 {item.image ? <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="img" /> : '🛍️'}
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{item.name}</h3>
                 <strong style={{ color: 'var(--copper)' }}>{Number(item.price).toLocaleString('vi-VN')} đ</strong>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f4f6f1', padding: '4px', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg)', padding: '4px', borderRadius: '8px' }}>
                 <button className="btn ghost" style={{ minHeight: '30px', padding: '0 12px', borderColor: 'transparent', color: 'var(--ink)' }} onClick={() => updateQuantity(item.id, -1)}>-</button>
                 <span style={{ fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{item.quantity}</span>
                 <button className="btn ghost" style={{ minHeight: '30px', padding: '0 12px', borderColor: 'transparent', color: 'var(--ink)' }} onClick={() => updateQuantity(item.id, 1)}>+</button>
@@ -98,7 +98,7 @@ export default function CartPage() {
           ))}
           
           {/* Thông tin giao hàng */}
-          <div className="panel" style={{ marginTop: '16px', background: '#fff' }}>
+          <div className="panel" style={{ marginTop: '16px', background: 'var(--paper)', border: '1px solid var(--line)' }}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>Thông tin giao hàng</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
               <div>
@@ -134,7 +134,7 @@ export default function CartPage() {
             </div>
           </div>
           
-          <div className="panel" style={{ marginTop: '16px', background: '#f2f8f5', border: '1px solid #cce0d6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="panel" style={{ marginTop: '16px', background: 'var(--paper)', border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div><span style={{ color: 'var(--muted)' }}>Tổng thanh toán:</span><br/><strong style={{ fontSize: '24px', color: 'var(--green-2)' }}>{total.toLocaleString('vi-VN')} đ</strong></div>
             <button className="btn" style={{ background: 'var(--green-2)', color: '#fff', fontSize: '16px', padding: '12px 32px' }} onClick={handleCheckout}>Tiến hành Đặt hàng</button>
           </div>
@@ -145,7 +145,7 @@ export default function CartPage() {
       {alertObj && createPortal(
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div className="panel page-transition" style={{ width: '100%', maxWidth: '400px', padding: '0', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: '#f9fbf9' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'var(--bg)' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: 'var(--ink)' }}>Thông báo</h3>
               <button type="button" className="btn ghost" style={{ padding: '4px 8px', minHeight: 'auto', border: 'none', color: 'var(--muted)' }} onClick={() => { if(alertObj.onClose) alertObj.onClose(); setAlertObj(null); }}>✕</button>
             </div>

@@ -14,8 +14,8 @@
       --line: #1c221e;
       --paper: #121614;
       --bg: #090b0a;
-      --green: #176b52;
-      --green-2: #0f4d3b;
+      --green: #10b981;
+      --green-2: #34d399;
       --copper: #b66a2c;
       --blue: #2563eb;
       --red: #dc2626;
@@ -23,17 +23,17 @@
       --shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       --shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.7);
       --gradient-sidebar: linear-gradient(135deg, #121614 0%, #090b0a 100%);
-      --gradient-primary: linear-gradient(135deg, #176b52 0%, #0f4d3b 100%);
+      --gradient-primary: linear-gradient(135deg, #10b981 0%, #0b7a5a 100%);
     }
 
     /* Light Mode CSS Variables and Overrides */
     body.light-mode {
       --ink: #0f172a;
-      --muted: #64748b;
+      --muted: #475569;
       --line: #cbd5e1;
       --paper: #ffffff;
       --bg: #f8fafc;
-      --green: #10b981;
+      --green: #059669;
       --green-2: #047857;
       --copper: #b66a2c;
       --blue: #2563eb;
@@ -42,6 +42,11 @@
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.08);
       --gradient-sidebar: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+
+    body.light-mode input::placeholder, 
+    body.light-mode textarea::placeholder {
+      color: #64748b !important;
     }
 
     body.light-mode input, body.light-mode select, body.light-mode textarea {

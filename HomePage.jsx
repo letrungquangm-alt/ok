@@ -243,11 +243,11 @@ export default function HomePage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: isMobile ? '12px' : '20px 0',
-      background: '#090b0a',
-      color: '#fff',
+      background: 'var(--paper)',
+      color: 'var(--ink)',
       borderRadius: '20px',
       overflow: 'hidden',
-      border: '1px solid #1c221e'
+      border: '1px solid var(--line)'
     }}>
       <div className="portfolio-container" style={{
         width: '100%',
@@ -509,9 +509,9 @@ export default function HomePage() {
           )}
 
           {/* Contact Details */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px', color: '#94a3b8', borderTop: '1px solid #1c221e', paddingTop: '16px' }}>
-            {phone && <div>📞 Điện thoại / Zalo: <strong style={{ color: '#fff' }}>{phone}</strong></div>}
-            {facetime && <div>✉ FaceTime: <strong style={{ color: '#fff' }}>{facetime}</strong></div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px', color: 'var(--muted)', borderTop: '1px solid var(--line)', paddingTop: '16px' }}>
+            {phone && <div>📞 Điện thoại / Zalo: <strong style={{ color: 'var(--ink)' }}>{phone}</strong></div>}
+            {facetime && <div>✉ FaceTime: <strong style={{ color: 'var(--ink)' }}>{facetime}</strong></div>}
           </div>
 
           <div>

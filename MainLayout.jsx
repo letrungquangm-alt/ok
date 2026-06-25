@@ -360,7 +360,7 @@ export default function MainLayout() {
   }, [location.pathname, isCustomer]);
 
   return (
-    <div className={renderIsClientPage ? "client-theme" : "app"} style={renderIsClientPage ? { minHeight: '100vh', display: 'flex', flexDirection: 'row', position: 'relative', background: '#090b0a', color: '#fff' } : {}}>
+    <div className={renderIsClientPage ? "client-theme" : "app"} style={renderIsClientPage ? { minHeight: '100vh', display: 'flex', flexDirection: 'row', position: 'relative', background: 'var(--bg)', color: 'var(--ink)' } : {}}>
       {/* Morphing Navbar CSS Styles */}
       <style>{`
         /* Morphing Navbar Container */
@@ -759,7 +759,7 @@ export default function MainLayout() {
           --bg: #f8fafc;
           --paper: #ffffff;
           --ink: #0f172a;
-          --muted: #64748b;
+          --muted: #475569;
           --line: #cbd5e1;
           --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
           --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.08);
