@@ -461,6 +461,8 @@ export default function OrdersPage({ isHistory = false }) {
                                 checked={selectedOrderIds.includes(o.id)} 
                                 onChange={() => handleToggleSelectOrder(o.id)}
                                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                aria-label={`Chọn đơn hàng ${o.id}`}
+                                title="Chọn đơn hàng này"
                               />
                               {selectedOrderIds.includes(o.id) && (
                                 <span style={{ 

@@ -147,6 +147,8 @@ export default function SentEmailsPage() {
                             checked={selectedIds.includes(e.id)} 
                             onChange={() => handleToggleSelect(e.id)}
                             style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                            aria-label={`Chọn email ID ${e.id}`}
+                            title="Chọn email này"
                           />
                           {selectedIds.includes(e.id) && (
                             <span style={{ 

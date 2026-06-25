@@ -1465,6 +1465,8 @@ export default function WebSettingsPage() {
                       checked={syncBrand} 
                       onChange={e => { setSyncBrand(e.target.checked); markDirty(); }} 
                       style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
+                      aria-label="Đồng bộ phông chữ Logo / Thương hiệu theo Giao diện Web"
+                      title="Đồng bộ phông chữ Logo / Thương hiệu theo Giao diện Web"
                     />
                     <span>Đồng bộ phông chữ <strong>Logo / Thương hiệu (Brand)</strong></span>
                   </label>
@@ -1475,6 +1477,8 @@ export default function WebSettingsPage() {
                       checked={syncSubHeading} 
                       onChange={e => { setSyncSubHeading(e.target.checked); markDirty(); }} 
                       style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
+                      aria-label="Đồng bộ phông chữ Tiêu đề phụ theo Giao diện Web"
+                      title="Đồng bộ phông chữ Tiêu đề phụ theo Giao diện Web"
                     />
                     <span>Đồng bộ phông chữ <strong>Tiêu đề phụ (Sub-heading)</strong></span>
                   </label>
@@ -1485,6 +1489,8 @@ export default function WebSettingsPage() {
                       checked={syncDesc} 
                       onChange={e => { setSyncDesc(e.target.checked); markDirty(); }} 
                       style={{ width: '16px', height: '16px', accentColor: 'var(--copper)' }}
+                      aria-label="Đồng bộ phông chữ Giới thiệu ngắn theo Giao diện Web"
+                      title="Đồng bộ phông chữ Giới thiệu ngắn theo Giao diện Web"
                     />
                     <span>Đồng bộ phông chữ <strong>Giới thiệu ngắn (Description)</strong></span>
                   </label>
