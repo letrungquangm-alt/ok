@@ -231,6 +231,18 @@ async function initDb() {
     { key: 'announcement', value: '[Update 12/06/2026] Bắt đầu tính phí gói ảnh ở tất cả các thể loại chụp/quay.' },
     { key: 'phone', value: '0703.01.2959' },
     { key: 'facetime', value: '0703.01.2959 (Audio Only)' },
+    { key: 'email_subject', value: '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}' },
+    { key: 'email_body', value: `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+  <p>Xin chào <strong>{full_name}</strong> với mã tra cứu <strong>{lookup_code}</strong>,</p>
+  <p>Chúng tôi đã nhận được thông tin <strong>{payment_status}</strong> của bạn và đơn hàng <strong>{order_no}</strong> đã hoàn thành!</p>
+  {preview_image}
+  <p>Dưới đây là toàn bộ gói ảnh của bạn!</p>
+  <p><strong>Link Drive tải ảnh:</strong> <a href="{drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>
+  <p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">{drive_password}</code></p>
+  <br/>
+  <p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>
+  <p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>
+</div>` },
     { key: 'slides', value: JSON.stringify([
       { title: 'ẢNH CHÂN DUNG', desc: 'Lưu giữ những khoảnh khắc chân thực, thần thái tự nhiên và sắc nét nhất của bạn.', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80' },
       { title: 'ẢNH PHONG CẢNH', desc: 'Bản hòa ca của ánh sáng và thiên nhiên hùng vĩ qua góc nhìn nghệ thuật đặc trưng.', image: 'https://images.unsplash.com/photo-1472214222541-d510753a49f8?auto=format&fit=crop&w=800&q=80' },

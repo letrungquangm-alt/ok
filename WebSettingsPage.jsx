@@ -195,6 +195,8 @@ export default function WebSettingsPage() {
   const [announcement, setAnnouncement] = useState('');
   const [phone, setPhone] = useState('');
   const [facetime, setFacetime] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
   const [slides, setSlides] = useState([]);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -250,6 +252,8 @@ export default function WebSettingsPage() {
           announcement: res.data.announcement || '',
           phone: res.data.phone || '',
           facetime: res.data.facetime || '',
+          email_subject: res.data.email_subject || '',
+          email_body: res.data.email_body || '',
           slides: res.data.slides || [],
         };
         setDisplayName(data.display_name);
@@ -258,6 +262,8 @@ export default function WebSettingsPage() {
         setAnnouncement(data.announcement);
         setPhone(data.phone);
         setFacetime(data.facetime);
+        setEmailSubject(data.email_subject);
+        setEmailBody(data.email_body);
         setSlides(data.slides);
         savedRef.current = data;
         setIsDirty(false);
@@ -300,7 +306,17 @@ export default function WebSettingsPage() {
     setSaving(true);
     setErrorMsg('');
     try {
-      const payload = { display_name: displayName, sub_heading: subHeading, description, announcement, phone, facetime, slides };
+      const payload = {
+        display_name: displayName,
+        sub_heading: subHeading,
+        description,
+        announcement,
+        phone,
+        facetime,
+        email_subject: emailSubject,
+        email_body: emailBody,
+        slides
+      };
       await api.put('/web-settings', payload);
       savedRef.current = payload;
       setIsDirty(false);
@@ -423,6 +439,36 @@ export default function WebSettingsPage() {
                 <input id="ws-facetime" name="facetime" type="text" autoComplete="off" placeholder="Ví dụ: 0703.01.2959 (Audio Only)" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
                   value={facetime} onChange={e => { setFacetime(e.target.value); markDirty(); }} />
               </div>
+            </div>
+          </section>
+
+          {/* --- EMAIL CONFIGURATION --- */}
+          <section style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '12px' }}>
+            <h3 style={{ margin: '0 0 8px 0', borderBottom: '1px solid var(--line)', paddingBottom: '8px', color: 'var(--ink)', fontSize: '17px' }}>✉️ Nội dung Email hoàn thành đơn</h3>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)', lineHeight: '1.45' }}>
+              Cấu hình tiêu đề và nội dung HTML của thư điện tử gửi tự động tới khách hàng khi duyệt đơn thành công.
+              Các từ khóa động hỗ trợ thay thế:
+              <br />
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{order_no}'}</code> (Mã đơn)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{full_name}'}</code> (Tên khách)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{lookup_code}'}</code> (Mã tra cứu)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{payment_status}'}</code> (Trạng thái phí)
+              <br />
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_link}'}</code> (Link tải Drive)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', marginRight: '6px', fontSize: '12px', fontFamily: 'monospace' }}>{'{drive_password}'}</code> (Mật khẩu Drive)
+              <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', fontFamily: 'monospace' }}>{'{preview_image}'}</code> (Ảnh xem trước - tự động ẩn nếu không tải lên)
+            </p>
+
+            <div>
+              <label htmlFor="ws-email-subject" className="label">Tiêu đề Email</label>
+              <input id="ws-email-subject" name="email_subject" type="text" placeholder="Ví dụ: [HoangKiet] Cập nhật thông tin đơn hàng {order_no}" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)' }}
+                value={emailSubject} onChange={e => { setEmailSubject(e.target.value); markDirty(); }} required />
+            </div>
+
+            <div>
+              <label htmlFor="ws-email-body" className="label">Nội dung Email (HTML)</label>
+              <textarea id="ws-email-body" name="email_body" placeholder="Nhập mã HTML..." style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--line)', minHeight: '220px', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.5' }}
+                value={emailBody} onChange={e => { setEmailBody(e.target.value); markDirty(); }} required />
             </div>
           </section>
 

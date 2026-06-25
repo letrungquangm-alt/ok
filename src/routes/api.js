@@ -15,6 +15,88 @@ const {
 
 const router = express.Router();
 
+async function getEmailContent(lookup, order, newDriveLink, newDrivePassword, newPreviewImage) {
+  const isFree = (order.package_type === 'Miễn phí');
+  const paymentStatus = isFree ? 'đăng ký gói ảnh miễn phí' : 'thanh toán gói ảnh';
+  const orderNoText = order.order_no;
+  const driveLink = newDriveLink || order.drive_link || '';
+  const drivePassword = newDrivePassword || order.drive_password || 'Không có';
+  const activePreviewImage = newPreviewImage || order.preview_image || '';
+
+  // Get from db or default
+  const subjectRes = await query("SELECT value FROM web_settings WHERE key = 'email_subject'");
+  const bodyRes = await query("SELECT value FROM web_settings WHERE key = 'email_body'");
+
+  let subjectTpl = (subjectRes.rows.length > 0) ? subjectRes.rows[0].value : '[HoangKiet] Cập nhật thông tin đơn hàng {order_no}';
+  let bodyTpl = (bodyRes.rows.length > 0) ? bodyRes.rows[0].value : `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">
+  <p>Xin chào <strong>{full_name}</strong> với mã tra cứu <strong>{lookup_code}</strong>,</p>
+  <p>Chúng tôi đã nhận được thông tin <strong>{payment_status}</strong> của bạn và đơn hàng <strong>{order_no}</strong> đã hoàn thành!</p>
+  {preview_image}
+  <p>Dưới đây là toàn bộ gói ảnh của bạn!</p>
+  <p><strong>Link Drive tải ảnh:</strong> <a href="{drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>
+  <p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">{drive_password}</code></p>
+  <br/>
+  <p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>
+  <p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>
+</div>`;
+
+  // Process subject
+  const subject = subjectTpl
+    .replace(/{order_no}/g, orderNoText)
+    .replace(/{full_name}/g, lookup.full_name)
+    .replace(/{lookup_code}/g, lookup.code);
+
+  // Process preview image and attachments
+  const attachments = [];
+  let previewHtml = '';
+
+  if (activePreviewImage && activePreviewImage.trim() !== '') {
+    const base64Regex = /^data:(image\/[a-zA-Z0-9-.+]+);base64,(.+)$/;
+    const match = activePreviewImage.match(base64Regex);
+    
+    if (match) {
+      const contentType = match[1];
+      const base64Data = match[2];
+      const extension = contentType.split('/')[1] || 'png';
+      const cidName = `preview_image_${Date.now()}.${extension}`;
+      
+      attachments.push({
+        filename: `preview.${extension}`,
+        content: Buffer.from(base64Data, 'base64'),
+        cid: cidName
+      });
+      
+      previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
+        `<div style="margin: 20px 0;"><img src="cid:${cidName}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+    } else {
+      previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
+        `<div style="margin: 20px 0;"><img src="${activePreviewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
+    }
+  }
+
+  // Replace placeholders in body
+  let html = bodyTpl
+    .replace(/{order_no}/g, orderNoText)
+    .replace(/{full_name}/g, lookup.full_name)
+    .replace(/{lookup_code}/g, lookup.code)
+    .replace(/{payment_status}/g, paymentStatus)
+    .replace(/{drive_link}/g, driveLink)
+    .replace(/{drive_password}/g, drivePassword)
+    .replace(/{preview_image}/g, previewHtml);
+
+  // Fallback text email
+  const text = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
+    `Chúng tôi đã nhận được thông tin ${paymentStatus} của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
+    (activePreviewImage && activePreviewImage.trim() !== '' ? `[Ảnh xem trước đính kèm trong email]\n\n` : '') +
+    `Dưới đây là toàn bộ gói ảnh của bạn:\n` +
+    `Link Drive: ${driveLink}\n` +
+    `Mật khẩu Drive: ${drivePassword}\n\n` +
+    `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
+    `Trân trọng,\nBan quản trị hệ thống.`;
+
+  return { subject, html, text, attachments };
+}
+
 function removeVietnameseTones(str) {
   if (!str) return '';
   let result = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -311,30 +393,14 @@ router.post('/orders/:id/confirm-free', requireAuth, async (req, res, next) => {
     const lookup = lookupRes.rows[0];
     if (lookup && lookup.email) {
       const { sendEmail } = require('../services/email');
-      const orderNoText = order.order_no;
-      const emailSubject = `[HoangKiet] Cập nhật thông tin đơn hàng ${orderNoText}`;
-
-      const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
-        `Chúng tôi đã nhận được đăng ký gói ảnh miễn phí của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
-        `Dưới đây là toàn bộ gói ảnh của bạn:\n` +
-        `Link Drive: ${order.drive_link || 'Chưa cung cấp'}\n` +
-        `Mật khẩu Drive: ${order.drive_password || 'Không có'}\n\n` +
-        `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
-        `Trân trọng,\nBan quản trị hệ thống.`;
-
-      const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
-        `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
-        `<p>Chúng tôi đã nhận được thông tin <strong>đăng ký gói ảnh miễn phí</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
-        `<p>Dưới đây là toàn bộ gói ảnh của bạn!</p>` +
-        (order.drive_link ? `<p><strong>Link Drive tải ảnh:</strong> <a href="${order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` : '') +
-        `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${order.drive_password || 'Không có'}</code></p>` +
-        `<br/>` +
-        `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
-        `<p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>` +
-        `</div>`;
-
-      await sendEmail({ to: lookup.email, subject: emailSubject, text: textMail, html: htmlMail })
-        .catch(err => console.error('Lỗi gửi email miễn phí:', err.message));
+      const { subject, html, text, attachments } = await getEmailContent(lookup, order);
+      await sendEmail({
+        to: lookup.email,
+        subject,
+        text,
+        html,
+        attachments: attachments.length > 0 ? attachments : undefined
+      }).catch(err => console.error('Lỗi gửi email miễn phí:', err.message));
     }
 
     res.json({ message: 'Đã xác nhận và gửi email cho khách hàng thành công!' });
@@ -938,68 +1004,19 @@ router.put('/orders/:id/lookup-update', requireRole('ADMIN', 'QUANLY'), async (r
 
     if (lookup) {
       const { sendEmail } = require('../services/email');
-      
-      const isFree = packageType === 'Miễn phí';
-      const paymentStatus = isFree ? 'đăng ký gói ảnh miễn phí' : 'thanh toán gói ảnh';
-      const orderNoText = order.order_no;
-
-      const emailSubject = `[HoangKiet] Cập nhật thông tin đơn hàng ${orderNoText}`;
-      
-      const activePreviewImage = previewImage || order.preview_image;
-      const attachments = [];
-      let previewHtml = '';
-
-      if (activePreviewImage && activePreviewImage.trim() !== '') {
-        const base64Regex = /^data:(image\/[a-zA-Z0-9-.+]+);base64,(.+)$/;
-        const match = activePreviewImage.match(base64Regex);
-        
-        if (match) {
-          const contentType = match[1];
-          const base64Data = match[2];
-          const extension = contentType.split('/')[1] || 'png';
-          const cidName = `preview_image_${Date.now()}.${extension}`;
-          
-          attachments.push({
-            filename: `preview.${extension}`,
-            content: Buffer.from(base64Data, 'base64'),
-            cid: cidName
-          });
-          
-          previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
-            `<div style="margin: 20px 0;"><img src="cid:${cidName}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
-        } else {
-          // If it is a normal URL (e.g. hosted somewhere)
-          previewHtml = `<h3>Ảnh xem trước của bạn:</h3>` +
-            `<div style="margin: 20px 0;"><img src="${activePreviewImage}" alt="Ảnh xem trước" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" /></div>`;
-        }
-      }
-
-      const textMail = `Xin chào ${lookup.full_name} với mã tra cứu ${lookup.code},\n\n` +
-        `Chúng tôi đã nhận được thông tin ${paymentStatus} của bạn và đơn hàng ${orderNoText} đã hoàn thành!\n\n` +
-        (activePreviewImage && activePreviewImage.trim() !== '' ? `[Ảnh xem trước đính kèm trong email]\n\n` : '') +
-        `Dưới đây là toàn bộ gói ảnh của bạn:\n` +
-        `Link Drive: ${driveLink || order.drive_link || 'Chưa cung cấp'}\n` +
-        `Mật khẩu Drive: ${drivePassword || order.drive_password || 'Không có'}\n\n` +
-        `Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!\n` +
-        `Trân trọng,\nBan quản trị hệ thống.`;
-
-      const htmlMail = `<div style="font-family: sans-serif; line-height: 1.6; color: #333;">` +
-        `<p>Xin chào <strong>${lookup.full_name}</strong> với mã tra cứu <strong>${lookup.code}</strong>,</p>` +
-        `<p>Chúng tôi đã nhận được thông tin <strong>${paymentStatus}</strong> của bạn và đơn hàng <strong>${orderNoText}</strong> đã hoàn thành!</p>` +
-        previewHtml +
-        `<p>Dưới đây là toàn bộ gói ảnh của bạn!</p>` +
-        `<p><strong>Link Drive tải ảnh:</strong> <a href="${driveLink || order.drive_link}" style="color: #10b981; font-weight: bold; text-decoration: underline;">lấy ảnh ở Drive</a></p>` +
-        `<p><strong>Mật khẩu:</strong> <code style="background: #f4f6f1; padding: 2px 6px; border-radius: 4px;">${drivePassword || order.drive_password || 'Không có'}</code></p>` +
-        `<br/>` +
-        `<p style="font-style: italic; color: #555;">Chúc bạn luôn có những bức ảnh đẹp nhất và ngập tràn niềm vui!</p>` +
-        `<p>Trân trọng,<br/><strong>Ban quản trị HoangKiet</strong></p>` +
-        `</div>`;
+      const { subject, html, text, attachments } = await getEmailContent(
+        lookup,
+        order,
+        driveLink,
+        drivePassword,
+        previewImage
+      );
 
       await sendEmail({
         to: lookup.email,
-        subject: emailSubject,
-        text: textMail,
-        html: htmlMail,
+        subject,
+        text,
+        html,
         attachments: attachments.length > 0 ? attachments : undefined
       }).catch(err => console.error('Failed to send update lookup email:', err.message));
     }
